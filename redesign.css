@@ -314,12 +314,16 @@ select:focus-visible {
 
 .account-pill {
   min-height: 44px;
+  max-width: min(220px, 34vw);
   padding: 8px 13px;
   border: 2px solid var(--ink);
   border-radius: 8px;
   background: var(--panel);
   box-shadow: 0 4px 0 var(--surface-shadow);
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-pill:active {
@@ -986,6 +990,31 @@ html[data-theme^="dark"] .sim-hero .eyebrow {
   color: var(--muted);
 }
 
+#signupUsernameField {
+  margin-bottom: 10px;
+}
+
+.profile-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 2px dashed var(--line);
+}
+
+.profile-editor .auth-msg {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.account-email {
+  margin: 5px 0 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
 button,
 .brand,
 .mark::before,
@@ -1297,9 +1326,14 @@ button,
     font-size: 24px;
   }
 
-  #signedEmail {
+  #signedUsername {
     font-size: 26px;
     overflow-wrap: anywhere;
+  }
+
+  .profile-editor {
+    grid-template-columns: 1fr;
+    align-items: stretch;
   }
 }
 

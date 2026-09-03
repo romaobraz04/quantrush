@@ -8,4 +8,4 @@ Serve this folder with any static web server, then open `index.html`. Opening th
 
 ## Hosting
 
-The production build is the contents of `dist/`. It contains `index.html`, `redesign.css`, and `assets/` with no private server credentials. The Supabase key in the browser code is a public publishable key; database access is enforced by Row Level Security.
+The app is ready to publish from the repository root with GitHub Pages. It contains no private server credentials. The Supabase key in the browser code is a public publishable key; database access is enforced by Row Level Security.
