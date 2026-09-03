@@ -1,0 +1,4 @@
+dist/
+*.tar.gz
+sources/
+AGENTS.md
