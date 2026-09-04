@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { chromium } = require('@playwright/test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -14,7 +14,7 @@ function solve(prompt) {
   return op === '+' ? a + b : op === '−' ? a - b : op === '×' ? a * b : a / b;
 }
 (async () => {
-  const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || 'msedge', headless: true });
+    const browser = await chromium.launch({ ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}), headless: true });
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     await context.route('https://cdn.jsdelivr.net/npm/@supabase/**', route => route.fulfill({ contentType: 'application/javascript', body: 'export function createClient(){return {auth:{getSession:async()=>({data:{session:null}}),onAuthStateChange:()=>{}}}}' }));
@@ -120,7 +120,7 @@ function solve(prompt) {
     ` }));
     const account = await accountContext.newPage();
     account.on('pageerror', error => errors.push(error.message));
-    await account.goto('http://localhost:4173/index.html');
+    await account.goto(process.env.QUANTRUSH_URL || 'http://localhost:4173/index.html');
     await account.getByRole('button', { name: '◎ Account', exact: true }).click();
     await account.locator('#syncStatus').filter({ hasText: 'All progress synced.' }).waitFor();
     await account.locator('#profileUsername').fill('NewPlayer');

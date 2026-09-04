@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="referrer" content="no-referrer" />
 <title>QuantRush - Mental Arithmetic Training</title>
 <meta name="description" content="Fast, focused mental arithmetic practice with an 80 in 8 Hardcore Mode." />
 <meta name="theme-color" content="#f5f3ed" />
@@ -22,7 +23,8 @@ html[data-theme="dark"]{--bg:#111317;--panel:#191c21;--panel2:#22262d;--text:#f5
 @media(max-width:980px){.app{grid-template-columns:84px minmax(0,1fr)}.brand span:last-child,.navbtn .label,.mini-index small{display:none}.brand{justify-content:center}.sidebar{padding:18px 11px}.navbtn{justify-content:center}.mini-index{text-align:center}.train-layout{grid-template-columns:1fr}.home-grid,.lower-grid{grid-template-columns:1fr 1fr}.lower-grid .card:last-child{grid-column:1/-1}.admin-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:680px){.app{display:block}.sidebar{position:fixed;z-index:20;left:0;right:0;bottom:0;top:auto;height:auto;border-right:0;border-top:1px solid var(--line);padding:7px 8px;background:var(--panel)}.brand,.side-bottom{display:none}.nav{grid-template-columns:repeat(5,1fr);gap:3px}.navbtn{min-height:54px;padding:6px 4px;display:grid;place-items:center;gap:0;font-size:10px}.navbtn .label{display:block}.main{padding:20px 14px 90px}.topline{align-items:flex-start}.account-pill{font-size:12px}.home-grid,.lower-grid{grid-template-columns:1fr}.lower-grid .card:last-child{grid-column:auto}.hero-index{grid-template-columns:1fr}.ring{display:none}.skillgrid,.admin-grid{grid-template-columns:1fr}.sim-lobby{padding:0}.sim-hero{padding:28px 18px 22px}.sim-rules{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:18px 0}.rule{padding:10px 4px}.rule strong{font-size:17px}.warning{font-size:12px;padding:10px 11px;margin:12px auto}.seg{grid-template-columns:repeat(2,1fr)}.scorebar{grid-template-columns:repeat(2,1fr)}.choice-grid{grid-template-columns:1fr}.choice{min-height:58px}.typed-row{grid-template-columns:1fr}.typed-row .primary{width:100%}}
 </style>
-<link rel="stylesheet" href="./redesign.css?v=hardcore5" />
+<link rel="stylesheet" href="./redesign.css?v=beta1" />
+<link rel="stylesheet" href="./beta.css?v=1" />
 </head>
 <body>
 <div class="app" id="app">
@@ -42,6 +44,7 @@ html[data-theme="dark"]{--bg:#111317;--panel:#191c21;--panel2:#22262d;--text:#f5
 </aside>
 <main class="main">
   <div class="topline"><div><h1 id="pageTitle">Home</h1><p id="pageSub">Become CRACKED at mental arithmetic!</p></div><button class="account-pill" id="accountPill">Guest</button></div>
+  <div id="migrationNotice" class="migration-notice hidden"><strong>QuantRush has a new home.</strong><p>Sign in there to restore synced progress. Guest history stays in this browser until you transfer it.</p><div class="button-row"><a id="newSiteLink" class="secondary" rel="noreferrer">Open QuantRush</a><button class="ghost" id="migrationTransfer">Transfer guest history</button></div></div>
 
   <section class="page active" id="page-home">
     <div class="grid home-grid">
@@ -92,35 +95,70 @@ html[data-theme="dark"]{--bg:#111317;--panel:#191c21;--panel2:#22262d;--text:#f5
       <div class="eyebrow">Account</div>
       <h2 id="accountTitle">Save progress across devices</h2>
       <p class="copy" id="accountIntro">Guest mode stays on this browser. Email/password accounts sync your QuantRush training history across devices.</p>
+      <p id="authLinkMsg" class="auth-msg hidden" role="status"></p>
       <form id="signedOut">
         <div class="tabs"><button type="button" class="active" data-auth="signin">Sign in</button><button type="button" data-auth="signup">Create account</button></div>
         <div class="field hidden" id="signupUsernameField"><label>Username</label><input class="control" id="signupUsername" type="text" autocomplete="username" maxlength="20" placeholder="quantmaster"><p class="hint">3–20 letters, numbers, or underscores.</p></div>
         <div class="field"><label for="email">Email</label><input class="control" id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-        <div class="field" style="margin-top:10px"><label for="password">Password</label><input class="control" id="password" type="password" autocomplete="current-password" required minlength="6" placeholder="At least 6 characters"></div>
+        <div class="field" style="margin-top:10px"><label for="password">Password</label><input class="control" id="password" type="password" autocomplete="current-password" required placeholder="Your password"></div>
+        <div id="authCaptcha" class="captcha-slot"></div><button type="button" class="text-action hidden" id="retryAuthCaptcha">Retry security check</button>
         <button class="primary" id="authButton" style="margin-top:14px">Sign in</button>
+        <div class="auth-links"><button type="button" class="text-action" id="forgotPassword">Forgot password?</button><button type="button" class="text-action" id="resendConfirmation">Resend confirmation email</button></div>
         <div class="auth-msg" id="authMsg" role="status"></div>
+      </form>
+      <form id="emailHelp" class="hidden">
+        <h3 id="emailHelpTitle">Reset password</h3>
+        <div class="field"><label for="helpEmail">Email</label><input class="control" id="helpEmail" type="email" autocomplete="email" required></div>
+        <div id="helpCaptcha" class="captcha-slot"></div><button type="button" class="text-action hidden" id="retryHelpCaptcha">Retry security check</button>
+        <div class="button-row account-form-actions"><button class="primary" id="emailHelpSubmit">Send reset link</button><button type="button" class="ghost" id="emailHelpBack">Back to account</button></div>
+        <p id="emailHelpMsg" class="auth-msg" role="status"></p>
+      </form>
+      <form id="passwordRecovery" class="hidden">
+        <h3>Choose a new password</h3><p class="copy" id="recoveryEmail"></p>
+        <div class="field"><label for="newPassword">New password</label><input class="control" id="newPassword" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters"></div>
+        <div class="field account-form-actions"><label for="confirmPassword">Confirm new password</label><input class="control" id="confirmPassword" type="password" autocomplete="new-password" required minlength="8"></div>
+        <div class="button-row account-form-actions"><button class="primary" id="savePassword">Save new password</button><button type="button" class="ghost" id="cancelRecovery">Cancel</button></div>
+        <p id="recoveryMsg" class="auth-msg" role="status"></p>
       </form>
       <div id="signedIn" class="hidden">
         <div class="role-row"><div><div class="metric-big" id="signedUsername"></div><p class="account-email" id="signedEmail"></p><p class="copy" id="syncStatus">Progress sync is active.</p></div><span class="role-badge" id="roleBadge">Player</span></div>
         <div class="profile-editor"><div class="field"><label>Username</label><input class="control" id="profileUsername" type="text" autocomplete="username" maxlength="20" placeholder="quantmaster"><p class="hint">This is the name shown around QuantRush.</p></div><button class="secondary" id="saveUsername">Save username</button><div class="auth-msg" id="profileMsg"></div></div>
-        <div class="account-actions"><button class="secondary" id="syncNow">Sync now</button><button class="danger" id="signOut">Sign out on this device</button></div>
+        <div class="account-actions"><button class="secondary" id="syncNow">Sync now</button><button class="ghost" id="resetMyPassword">Reset password</button><button class="danger" id="signOut">Sign out on this device</button></div>
         <p class="auth-msg" id="accountMsg" role="status"></p>
-        <div id="adminPanel" class="admin-panel hidden"><div class="eyebrow">Admin</div><div class="admin-grid"><div class="admin-stat"><small>Users</small><strong id="adminUsers">—</strong></div><div class="admin-stat"><small>Sessions</small><strong id="adminSessions">—</strong></div><div class="admin-stat"><small>Latest</small><strong id="adminLatest">—</strong></div></div><button class="secondary" id="refreshAdmin">Refresh admin stats</button><p class="hint" id="adminHint">Admin access is assigned in Supabase and appears after signing in again.</p></div>
+        <div id="adminPanel" class="admin-panel hidden"><div class="eyebrow">Admin</div><div class="admin-grid"><div class="admin-stat"><small>Users</small><strong id="adminUsers">—</strong></div><div class="admin-stat"><small>Sessions</small><strong id="adminSessions">—</strong></div><div class="admin-stat"><small>Latest</small><strong id="adminLatest">—</strong></div></div><button class="secondary" id="refreshAdmin">Refresh admin stats</button><p class="hint" id="adminHint">Admin access is assigned in Supabase and appears after signing in again.</p><div class="admin-feedback"><h3>Feedback and analytics</h3><div class="button-row"><a class="text-action hidden" id="feedbackResults" target="_blank" rel="noopener noreferrer">Responses and charts</a><a class="text-action hidden" id="feedbackSheet" target="_blank" rel="noopener noreferrer">Response spreadsheet</a></div><p id="feedbackAdminStatus" class="copy"></p></div><details class="release-status"><summary>Public beta checklist</summary><ul id="releaseBlockers"></ul></details></div>
       </div>
+      <section class="progress-transfer" aria-labelledby="transferTitle"><h3 id="transferTitle">Progress backup</h3><p class="copy" id="transferDescription">Export your saved sessions or import a QuantRush backup. Existing sessions are kept.</p><div class="button-row"><button class="secondary" id="exportProgress">Export progress</button><button class="ghost" id="importProgress">Import progress</button></div><input type="file" id="progressFile" accept=".json,application/json" hidden><p class="auth-msg" id="transferMsg" role="status"></p></section>
     </div>
   </section>
+  <section class="page privacy-page" id="page-privacy">
+    <h2>Your data</h2><p>QuantRush stores arithmetic attempts, session dates, answers, timing, settings, and calculated progress. The readiness index is a training estimate, not a pass probability.</p>
+    <h3>Guest and account progress</h3><p>Guest history and preferences stay in your browser. Clearing browser storage removes them. When you sign in, guest sessions are added to that account and synced with Supabase. Account history is kept until you request its deletion. Backups contain training history, not passwords or sign-in tokens.</p>
+    <h3>Services</h3><p>Supabase handles accounts and saved history. The site uses GitHub Pages during the hosting transition and Cloudflare Pages after migration. jsDelivr delivers the Supabase client code. These providers process connection information to deliver the app. When enabled, Cloudflare Turnstile performs security checks on account forms. Their service logs may have separate retention periods.</p>
+    <h3>Feedback</h3><p>The linked Google Form is optional. Its responses and charts are private to the QuantRush owner. You may include a reply email, but it is not collected automatically. There are no ads or marketing trackers in this beta.</p>
+    <h3>Access and deletion</h3><p>Use Progress backup in Account to download your locally available history. Sync first to include all account sessions. For access, correction, or deletion requests, use the account/data-request category in the feedback form. Account ownership will be verified before a deletion; submitting a form does not delete anything automatically.</p>
+    <p id="privacyContact" class="copy"></p><button class="secondary" data-go="account">Open account</button>
+  </section>
+  <footer id="supportLinks" class="support-links"><a id="feedbackLink" class="hidden" target="_blank" rel="noopener noreferrer">Feedback</a><button type="button" class="text-action" id="privacyLink">Privacy</button><small id="releaseVersion"></small></footer>
 </main>
 </div>
 <script type="module">
 import { BLUEPRINT, structuredProblem, simulationPlan, simulationSummary, reviewQuestions, calculateReadiness } from './training-core.mjs?v=5';
+import { siteConfig } from './site-config.mjs';
+import { createBackup, parseBackup, mergeProgress, MAX_BACKUP_BYTES, runSettings, cohortStats, feedbackUrl, releaseBlockers, authCallbackInfo, authErrorMessage } from './beta-core.mjs';
+import { createCaptcha } from './turnstile.mjs';
 const SUPABASE_URL='https://oixhuaaktwwzhcboueqj.supabase.co';
 const SUPABASE_KEY='sb_publishable_pMsOLWD4Ak-2niQl-kBa5g_y_QLpcIs';
+const incomingAuth=authCallbackInfo(location.href);
 let supabase=null;
 try{const mod=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm');supabase=mod.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})}catch(e){console.warn('Cloud auth unavailable',e)}
 const $=id=>document.getElementById(id), qsa=s=>[...document.querySelectorAll(s)];
 const LEGACY_STORE='quanttempo_sessions_v4', GUEST_STORE='quanttempo_guest_sessions_v5', THEME='quanttempo_theme_v4', SIM_HIDE_SCORE='quanttempo_sim_hide_score_v1', userStore=id=>`quanttempo_user_sessions_v5_${id}`;
 let authEpoch=0,authReady=false,syncTask=null,localSaveWarning='';
 let currentUser=null,currentProfile=null,sessions=loadGuestSessions(),authMode='signin',cloudStatus='Guest data is stored in this browser.',adminStats=null;
+let currentPage='home',authView='account',helpMode='reset',authBusy=false,authViewEpoch=0,recoveryUserId=null;
+const emailCooldowns=new Map();
+const loginCaptcha=createCaptcha(siteConfig.turnstileSiteKey,$('authCaptcha'));
+const emailCaptcha=createCaptcha(siteConfig.turnstileSiteKey,$('helpCaptcha'));
 let state={running:false,sim:false,problem:null,started:0,qStarted:0,timer:null,attempts:[],wrongOnCurrent:0,diff:'medium',answerMode:'choice',simAnswerMode:'choice',simAllowSkip:false,simHideScore:localStorage.getItem(SIM_HIDE_SCORE)==='true',simPlan:[],simProblems:[],lastPracticeFractionForm:null,practiceFractionStreak:0,mulShortcutCount:0,divShortcutCount:0,practiceConfig:null};
 const cats=['add','sub','mul','div','decimals','fractions','percent','missing'];
 const labels={add:'Addition',sub:'Subtraction',mul:'Multiplication',div:'Division',decimals:'Decimals',fractions:'Fractions',percent:'Percentages',missing:'Missing operand'};
@@ -162,7 +200,7 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function syncAll(){
   if(!supabase||!currentUser)return;
   const userId=currentUser.id,epoch=authEpoch;
-  if(syncTask?.userId===userId){const pending=syncTask;await pending.promise;if(currentUser?.id===userId&&authEpoch===epoch&&sessions.some(s=>!pending.uploaded.has(s.id)))return syncAll();return}
+  if(syncTask?.userId===userId){const pending=syncTask;await pending.promise;if(!pending.failed&&currentUser?.id===userId&&authEpoch===epoch&&sessions.some(s=>!pending.uploaded.has(s.id)))return syncAll();return}
   const job={userId,uploaded:new Set()};syncTask=job;
   job.promise=(async()=>{
     const active=()=>currentUser?.id===userId&&authEpoch===epoch;
@@ -184,7 +222,7 @@ async function syncAll(){
     if(!active())return;
     sessions=dedupe([...sessions,...cloud]);saveCurrentSessions();await upsertProfile();
     if(!active())return;cloudStatus='All progress synced.';if(isAdmin())await loadAdminStats();
-  })().catch(error=>{if(currentUser?.id===userId&&authEpoch===epoch)cloudStatus='Sync incomplete. Your local progress is kept. '+error.message}).finally(()=>{if(syncTask===job)syncTask=null;if(currentUser?.id===userId&&authEpoch===epoch)renderAll()});
+  })().catch(error=>{job.failed=true;if(currentUser?.id===userId&&authEpoch===epoch)cloudStatus='Sync incomplete. Your local progress is kept. '+error.message}).finally(()=>{if(syncTask===job)syncTask=null;if(currentUser?.id===userId&&authEpoch===epoch)renderAll()});
   return job.promise;
 }
 function cleanUsername(value){return String(value||'').trim()}
@@ -204,8 +242,18 @@ function recommendationLabel(rec){return labels[rec?.c]||(rec?.c==='full'?'Full 
 function renderHome(){const profile=readinessProfile(),r=profile.score,display=profile.rated?r:'—',sessionProof=Math.min(6,profile.sessionCount),skillProof=profile.skills.filter(x=>x.n>=16&&x.sessionCount>=2).length,simProof=Math.min(2,profile.fullSimulations);$('homeIndex').textContent=$('sideIndex').textContent=$('progressIndex').textContent=display;$('ringScore').textContent=profile.rated?r:profile.baselinePct+'%';$('indexRing').style.setProperty('--pct',(profile.rated?r:profile.baselinePct)+'%');const status=!profile.rated?(profile.sessionCount?'Baseline incomplete':'No data yet'):r>=80?'Ready':r>=65?'Close':r>=45?'Developing':r>=20?'Building':'Baseline';$('homeStatus').textContent=status;$('homeStatus').style.color=profile.rated&&r>=80?'var(--good)':profile.rated&&r>=65?'var(--warn)':'var(--muted)';$('homeIndexCopy').textContent=!profile.sessionCount?'Complete a Medium full-mixed baseline to start building evidence across all eight skills.':!profile.rated?`Readiness is not rated yet. Baseline ${profile.baselinePct}% complete: ${sessionProof}/6 sessions, ${profile.totalAnswers}/240 answers, ${skillProof}/8 skills repeated, ${profile.mediumAnswers}/120 Medium+ answers and ${simProof}/2 simulations.`:`Based on ${profile.sessionCount} sessions, ${profile.covered}/8 skills and ${profile.totalAnswers} answers. Confidence grows gradually. Recent Hardcore results also count.`;const rec=recommendation();$('suggestionSkill').textContent=rec.title;$('suggestionText').textContent=rec.text;const now=Date.now(),week=sessions.filter(s=>now-new Date(s.startedAt).getTime()<7*864e5);$('weekMinutes').textContent=Math.round(week.reduce((s,x)=>s+x.durationSec,0)/60)+' min';$('weekSessions').textContent=week.length;$('weekAnswers').textContent=week.reduce((s,x)=>s+(x.attempts||[]).filter(a=>typeof a.correct==='boolean').length,0);const best=[...profile.skills].filter(x=>x.n).sort((a,b)=>b.score-a.score)[0];$('bestSkill').textContent=best?`Strongest practice signal: ${labels[best.c]} (${best.score}/100, ${best.proofLabel}, ${best.provisional?'provisional':'established'}).`:'No strongest skill yet.'}
 function renderProgress(){const profile=readinessProfile(),sessionProof=Math.min(6,profile.sessionCount),skillProof=profile.skills.filter(x=>x.n>=16&&x.sessionCount>=2).length,simProof=Math.min(2,profile.fullSimulations);$('progressCopy').textContent=!profile.sessionCount?'Readiness will appear after a varied baseline.':!profile.rated?`Not rated yet · baseline ${profile.baselinePct}% complete · ${sessionProof}/6 sessions · ${profile.totalAnswers}/240 answers · ${skillProof}/8 skills repeated · ${profile.mediumAnswers}/120 Medium+ answers · ${simProof}/2 simulations.`:`${profile.sessionCount} sessions · ${profile.totalAnswers} answers · ${profile.covered}/8 skills covered. Skill signal ${profile.skillScore}. Hardcore signal ${profile.simulationSignal} from ${profile.simulationCount} runs. Confidence builds gradually; this is not a pass probability.`;$('totalSessions').textContent=`${sessions.length} session${sessions.length===1?'':'s'}`;$('totalAnswers').textContent=profile.totalAnswers;$('cloudState').textContent=localSaveWarning||(currentUser?cloudStatus:'Guest data is stored in this browser.');$('skillGrid').innerHTML=profile.skills.map(x=>{const tag=x.n?(x.provisional?'Provisional':'Established'):'Untested',detail=x.n?`${x.n} answers · ${x.sessionCount} session${x.sessionCount===1?'':'s'} · ${x.proofLabel} practice · median ${(x.median/1000).toFixed(1)}s`:'No evidence yet';return `<div class="skill"><div style="display:flex;justify-content:space-between;gap:10px"><strong>${labels[x.c]}</strong><div class="evidence-row"><span class="evidence-tag">${tag}</span><strong>${x.score}</strong></div></div><div class="bar"><i style="width:${x.score}%"></i></div><p class="muted" style="margin:8px 0 0">${detail}</p></div>`}).join('')}
 function renderAdmin(){const panel=$('adminPanel');if(!panel)return;const admin=isAdmin();panel.classList.toggle('hidden',!admin);$('roleBadge').textContent=admin?'Admin':'Player';if(!admin)return;if(adminStats?.loading){$('adminUsers').textContent=$('adminSessions').textContent=$('adminLatest').textContent='...';$('adminHint').textContent='Loading admin stats.';return}if(adminStats?.error){$('adminHint').textContent=`Admin stats unavailable: ${adminStats.error}`;return}$('adminUsers').textContent=adminStats?.users??'—';$('adminSessions').textContent=adminStats?.sessions??'—';$('adminLatest').textContent=adminStats?.latest?new Date(adminStats.latest.started_at).toLocaleDateString():'—';$('adminHint').textContent='Read-only overview from synced account data.'}
-function renderAuth(){const on=!!currentUser;$('signedOut').classList.toggle('hidden',on);$('signedIn').classList.toggle('hidden',!on);$('accountPill').textContent=on?visibleUsername():'Guest';$('accountTitle').textContent=on?'Your account':'Save progress across devices';$('accountIntro').textContent=on?'Your profile and saved training history.':'Guest progress stays in this browser. Sign in to keep it across devices.';if(on){$('signedUsername').textContent=visibleUsername();$('signedEmail').textContent=currentUser.email;$('syncStatus').textContent=localSaveWarning||cloudStatus;if(document.activeElement!==$('profileUsername'))$('profileUsername').value=visibleUsername();$('syncNow').disabled=!!syncTask;$('syncNow').textContent=syncTask?'Syncing…':'Sync now'}else if(localSaveWarning)$('authMsg').textContent=localSaveWarning;renderAdmin()}
-function setPage(name){qsa('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));qsa('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.page===name));const map={home:['Home','Become CRACKED at mental arithmetic!'],practice:['Practice','Focused drills with difficulty that can grow with you.'],sim:['80 in 8','Hardcore mode. The timer starts only when you say so.'],progress:['Progress','Your readiness profile across every arithmetic skill.'],account:['Account','Guest is fine. Sign in when you want cross-device progress.']};$('pageTitle').textContent=map[name][0];$('pageSub').textContent=map[name][1]}
+function renderAuth(){
+  const on=!!currentUser,help=authView==='help',recovery=authView==='recovery'&&on;
+  if(currentPage==='account')$('pageSub').textContent=on?'Your profile and saved progress.':'Guest is fine. Sign in when you want cross-device progress.';
+  $('signedOut').classList.toggle('hidden',on||help||recovery);$('signedIn').classList.toggle('hidden',!on||help||recovery);$('emailHelp').classList.toggle('hidden',!help);$('passwordRecovery').classList.toggle('hidden',!recovery);
+  $('accountPill').textContent=on?visibleUsername():'Guest';$('accountTitle').textContent=recovery?'Reset your password':help?'Account help':on?'Your account':'Save progress across devices';
+  $('accountIntro').textContent=help?'Account links are sent to your email.':recovery?'Choose a password with at least 8 characters.':on?'Your profile and saved training history.':'Guest progress stays in this browser. Sign in to keep it across devices.';
+  if(on){$('signedUsername').textContent=visibleUsername();$('signedEmail').textContent=currentUser.email;$('recoveryEmail').textContent=currentUser.email;$('syncStatus').textContent=localSaveWarning||cloudStatus;if(document.activeElement!==$('profileUsername'))$('profileUsername').value=visibleUsername();$('syncNow').disabled=!!syncTask;$('syncNow').textContent=syncTask?'Syncing…':'Sync now'}else if(localSaveWarning)$('authMsg').textContent=localSaveWarning;
+  $('transferDescription').textContent=on?'Export this account\'s locally available history. Sync first to include all saved sessions. Importing never replaces existing sessions.':'Export your guest history before moving to a new address. Importing a backup keeps existing sessions.';
+  $('exportProgress').disabled=state.running;$('importProgress').disabled=state.running;
+  renderAdmin();renderBetaAdmin();
+}
+function setPage(name){currentPage=name;qsa('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));qsa('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.page===name));const map={home:['Home','Become CRACKED at mental arithmetic!'],practice:['Practice','Focused drills with difficulty that can grow with you.'],sim:['80 in 8','Hardcore mode. The timer starts only when you say so.'],progress:['Progress','Your readiness profile across every arithmetic skill.'],account:['Account','Guest is fine. Sign in when you want cross-device progress.'],privacy:['Privacy','Your progress belongs to you.']};$('pageTitle').textContent=map[name][0];$('pageSub').textContent=map[name][1];renderSupport();if(name==='account'){renderAuth();prepareCaptcha()}else{loginCaptcha.remove();emailCaptcha.remove()}}
 function recommendedDiff(){const recent=sessions.find(s=>s.mode==='practice'&&(s.attempts||[]).length);if(!recent)return'medium';const diff=recent.config?.diff||'medium',attempts=recent.attempts||[],clean=attempts.filter(x=>x.firstTry).length/attempts.length;if(diff==='easy')return attempts.length>=20&&clean>=.85?'medium':'easy';if(diff==='medium'){if(attempts.length>=24&&clean>=.9)return'hard';if(clean<.65)return'easy';return'medium'}if(diff==='hard')return clean<.7?'medium':'hard';return'medium'}
 function setDiff(d){state.diff=d;qsa('#difficulty button').forEach(b=>b.classList.toggle('active',b.dataset.diff===d));$('customRanges').classList.toggle('hidden',d!=='custom');const rec=recommendedDiff();$('difficultyHint').textContent=d===rec?`Recommended: ${rec}. This uses your latest difficulty, answer volume and clean rate.`:`Recommended right now: ${rec}. You can still choose ${d}.`}
 function setAnswerMode(mode){state.answerMode=mode;qsa('[data-answer-format]').forEach(b=>b.classList.toggle('active',b.dataset.answerFormat===mode))}
@@ -219,9 +267,10 @@ function clearRun(){clearInterval(state.timer);state.running=false;$('simHistory
 function nextPracticeProblem(){return genFor($('operation').value,state.diff)}
 function startPractice(){const config=cfg();if(config.mode==='timed'&&config.duration<5){$('customDurationHint').textContent='Choose at least 5 seconds.';$('customDurationHint').classList.add('duration-error');$('customSeconds').focus();return}clearRun();state.practiceConfig=config;state.sim=false;state.running=true;state.lastPracticeFractionForm=null;state.practiceFractionStreak=0;state.started=Date.now();state.qStarted=Date.now();state.problem=nextPracticeProblem();$('practiceActions').classList.remove('hidden');$('gameTime').textContent=config.mode==='untimed'?'0:00':fmt(config.duration);$('gameScore').textContent='0';$('gamePace').textContent='0';renderProblem(false);state.timer=setInterval(()=>tick(false),200)}
 function startSimulation(){clearRun();state.sim=true;state.simPlan=buildSimPlan();const seen=new Set();state.simProblems=state.simPlan.map(item=>{let problem;for(let tries=0;tries<12;tries++){problem=genFor(item.op,item.diff,{simulation:true,signed:item.signed});if(!seen.has(problem.prompt))break}seen.add(problem.prompt);return problem});state.running=true;state.started=Date.now();state.qStarted=Date.now();state.problem=state.simProblems[0];$('simHistoryTab').disabled=true;$('simLobby').classList.add('hidden');$('simArena').classList.remove('hidden');$('simActions').classList.remove('hidden');resetSimView();renderProblem(true);state.timer=setInterval(()=>tick(true),200)}
-function quitSession(sim){clearRun();state.sim=false;if(sim){$('simActions').classList.add('hidden');$('simArena').classList.add('hidden');$('simLobby').classList.remove('hidden');resetSimView()}else{$('practiceActions').classList.add('hidden');resetPracticeView()}}
+function quitSession(sim){clearRun();state.sim=false;if(sim){$('simActions').classList.add('hidden');$('simArena').classList.add('hidden');$('simLobby').classList.remove('hidden');resetSimView()}else{$('practiceActions').classList.add('hidden');resetPracticeView()}renderSupport()}
 function restartSession(sim){clearRun();if(sim)startSimulation();else startPractice()}
 function renderProblem(sim){
+  renderSupport();
   const root=sim?$('simGame'):$('practiceGame'),choiceMode=(sim?state.simAnswerMode:state.answerMode)==='choice',heading=sim?'Question '+(state.attempts.length+1)+' of 80':labels[state.problem.op]||'Mixed practice';
   root.onkeydown=null;root.classList.remove('results');
   const skip=sim&&state.simAllowSkip?'<div class="question-actions"><button class="ghost" data-skip title="Skip this question for zero points">Skip →</button></div>':'';
@@ -257,26 +306,29 @@ function finish(){
   root.querySelector('[data-result-home]').onclick=()=>setPage('home');root.querySelector('[data-result-retry]').onclick=startPractice;root.querySelector('[data-result-practice]').onclick=()=>openCoachPractice(rec);
 }
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-let historyPage=0,historyFormat='all',historyDetailId=null;
+let historyPage=0,historyFormat='all',historySkip='all',historyDetailId=null;
+function skippingLabel(session){return{on:'Skipping on',off:'Skipping off',unknown:'Skipping not recorded'}[runSettings(session).skipping]}
+function formatLabel(session){return{typed:'Typed',choice:'4 choices',unknown:'Format not recorded'}[runSettings(session).format]}
 function runDate(session){const date=new Date(session.startedAt);return Number.isFinite(date.getTime())?date.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'Unknown date'}
 function showSimTab(tab){if(state.running&&state.sim)return;const history=tab==='history';$('simPlay').classList.toggle('hidden',history);$('simHistory').classList.toggle('hidden',!history);for(const[id,active]of[['simPlayTab',!history],['simHistoryTab',history]]){$(id).classList.toggle('active',active);$(id).setAttribute('aria-selected',String(active))}if(history)renderSimHistory()}
 function renderSimHistory(){
   const root=$('simHistory');
   if(historyDetailId){const session=sessions.find(s=>s.id===historyDetailId);if(session){renderRunDetail(session,root,true);return}historyDetailId=null}
-  const runs=sessions.filter(s=>s.mode==='80in8'&&(historyFormat==='all'||s.config?.answerMode===historyFormat));
-  const current=runs.filter(s=>s.config?.blueprint===BLUEPRINT),best=current.length?Math.max(...current.map(s=>simulationSummary(s).score)):'—',recent=current.slice(0,5),average=recent.length?Math.round(recent.reduce((sum,s)=>sum+simulationSummary(s).score,0)/recent.length):'—';
+  const runs=sessions.filter(s=>s.mode==='80in8'&&(historyFormat==='all'||runSettings(s).format===historyFormat)&&(historySkip==='all'||runSettings(s).skipping===historySkip));
+  const groups=cohortStats(runs);
   historyPage=Math.min(historyPage,Math.max(0,Math.ceil(runs.length/20)-1));
   root.classList.remove('results');
-  root.innerHTML=`<div class="history-heading"><div><div class="eyebrow">Hardcore record</div><h2>Run history</h2></div><label>Format <select class="control" data-history-format aria-label="History answer format"><option value="all">All formats</option><option value="choice">4 choices</option><option value="typed">Typed</option></select></label></div><div class="history-stats"><div><small>All runs</small><strong>${runs.length}</strong></div><div><small>Current mix best</small><strong>${best}</strong></div><div><small>Last 5 current mix</small><strong>${average}</strong></div></div><p class="copy">Dates shown in ${escapeHtml(Intl.DateTimeFormat().resolvedOptions().timeZone)}. Earlier question mixes are marked separately.</p><div class="history-list">${runs.slice(historyPage*20,historyPage*20+20).map((session,index)=>{const result=simulationSummary(session);return`<button class="history-run" data-run="${index}"><span><strong>${escapeHtml(runDate(session))}</strong><small>${session.config?.answerMode==='typed'?'Typed':'4 choices'} · ${session.config?.blueprint===BLUEPRINT?'Current mix':'Earlier mix'} · ${result.answered} answered</small></span><span class="history-score">${result.score}</span><span aria-hidden="true">→</span></button>`}).join('')||'<p class="empty-state">No saved Hardcore runs yet.</p>'}</div>${runs.length>20?`<div class="history-pagination"><button class="ghost" data-prev title="Previous runs" ${historyPage===0?'disabled':''}>←</button><span>${historyPage+1} / ${Math.ceil(runs.length/20)}</span><button class="ghost" data-next title="Next runs" ${(historyPage+1)*20>=runs.length?'disabled':''}>→</button></div>`:''}`;
+  root.innerHTML=`<div class="history-heading"><div><div class="eyebrow">Hardcore record</div><h2>Run history</h2></div><div class="history-filters"><label>Format <select class="control" data-history-format aria-label="History answer format"><option value="all">All formats</option><option value="choice">4 choices</option><option value="typed">Typed</option><option value="unknown">Not recorded</option></select></label><label>Skipping <select class="control" data-history-skip aria-label="History skipping"><option value="all">All settings</option><option value="off">Off</option><option value="on">On</option><option value="unknown">Not recorded</option></select></label></div></div><div class="cohort-list">${groups.map(group=>`<div class="cohort-row"><div><strong>${formatLabel(group.runs[0])} · ${skippingLabel(group.runs[0])}</strong><small>${escapeHtml(group.blueprint===BLUEPRINT?'Current mix':group.blueprint)} · ${group.count} runs</small></div><div><small>Best</small><strong>${group.best}</strong></div><div><small>Last 5</small><strong>${group.lastFive}</strong></div></div>`).join('')}</div><p class="copy">${runs.length} saved runs · ${escapeHtml(Intl.DateTimeFormat().resolvedOptions().timeZone)}</p><div class="history-list">${runs.slice(historyPage*20,historyPage*20+20).map((session,index)=>{const result=simulationSummary(session);return`<button class="history-run" data-run="${index}"><span><strong>${escapeHtml(runDate(session))}</strong><small>${formatLabel(session)} · ${skippingLabel(session)} · ${escapeHtml(session.config?.blueprint===BLUEPRINT?'Current mix':session.config?.blueprint||'Earlier mix')} · ${result.answered} answered</small></span><span class="history-score">${result.score}</span><span aria-hidden="true">→</span></button>`}).join('')||'<p class="empty-state">No saved Hardcore runs yet.</p>'}</div>${runs.length>20?`<div class="history-pagination"><button class="ghost" data-prev title="Previous runs" ${historyPage===0?'disabled':''}>←</button><span>${historyPage+1} / ${Math.ceil(runs.length/20)}</span><button class="ghost" data-next title="Next runs" ${(historyPage+1)*20>=runs.length?'disabled':''}>→</button></div>`:''}`;
   root.querySelector('[data-history-format]').value=historyFormat;
   root.querySelector('[data-history-format]').onchange=e=>{historyFormat=e.target.value;historyPage=0;renderSimHistory()};
+  root.querySelector('[data-history-skip]').value=historySkip;root.querySelector('[data-history-skip]').onchange=e=>{historySkip=e.target.value;historyPage=0;renderSimHistory()};
   root.querySelectorAll('[data-run]').forEach(button=>button.onclick=()=>{historyDetailId=runs[historyPage*20+Number(button.dataset.run)].id;renderSimHistory()});
   if(root.querySelector('[data-prev]')){root.querySelector('[data-prev]').onclick=()=>{historyPage--;renderSimHistory()};root.querySelector('[data-next]').onclick=()=>{historyPage++;renderSimHistory()}}
 }
 function renderRunDetail(session,root,fromHistory){
   const result=simulationSummary(session),rows=reviewQuestions(session),complete=Array.isArray(session.config?.questions),rec=recommendation(),recLabel=recommendationLabel(rec);
   root.classList.add('results');root.onkeydown=null;
-  root.innerHTML=`<div class="result-summary"><div class="eyebrow">${fromHistory?'Saved run':session.config?.endReason==='time'?'Time expired':'Run complete'}</div><div class="result-score">${result.score}</div><div class="result-breakdown"><span class="result-correct">+${result.correct} correct</span><span class="result-wrong">−${result.wrong} wrong</span><span>${result.skipped} skipped</span><span>${result.unreached} unreached</span></div><p class="copy">${escapeHtml(runDate(session))} · ${fmt(session.durationSec)} · ${session.config?.answerMode==='typed'?'Typed':'4 choices'} · ${session.config?.blueprint===BLUEPRINT?'Current mix':'Earlier mix'}</p><div class="button-row"><button class="primary" data-run-again>Try again</button><button class="ghost" data-run-history>All runs</button></div></div><div class="result-coach"><div><div class="eyebrow">Coach suggestion</div><h3>${recLabel}</h3><p class="copy">${escapeHtml(rec.text)}</p></div><button class="secondary" data-coach>Practice ${recLabel}</button></div><div class="review-heading"><h3>Question review</h3><select class="control" data-review-filter aria-label="Question review filter"><option value="all">All questions</option><option value="wrong">Wrong answers</option><option value="correct">Correct answers</option><option value="skipped">Skipped</option><option value="unreached">Unreached</option></select></div>${complete?'':'<p class="copy">This earlier run saved answered questions only. Unreached questions are unavailable.</p>'}<div class="review-list" data-review-list></div>`;
+  root.innerHTML=`<div class="result-summary"><div class="eyebrow">${fromHistory?'Saved run':session.config?.endReason==='time'?'Time expired':'Run complete'}</div><div class="result-score">${result.score}</div><div class="result-breakdown"><span class="result-correct">+${result.correct} correct</span><span class="result-wrong">−${result.wrong} wrong</span><span>${result.skipped} skipped</span><span>${result.unreached} unreached</span></div><p class="copy">${escapeHtml(runDate(session))} · ${fmt(session.durationSec)} · ${formatLabel(session)} · ${skippingLabel(session)} · ${escapeHtml(session.config?.blueprint===BLUEPRINT?'Current mix':session.config?.blueprint||'Earlier mix')}</p><div class="button-row"><button class="primary" data-run-again>Try again</button><button class="ghost" data-run-history>All runs</button></div></div><div class="result-coach"><div><div class="eyebrow">Coach suggestion</div><h3>${recLabel}</h3><p class="copy">${escapeHtml(rec.text)}</p></div><button class="secondary" data-coach>Practice ${recLabel}</button></div><div class="review-heading"><h3>Question review</h3><select class="control" data-review-filter aria-label="Question review filter"><option value="all">All questions</option><option value="wrong">Wrong answers</option><option value="correct">Correct answers</option><option value="skipped">Skipped</option><option value="unreached">Unreached</option></select></div>${complete?'':'<p class="copy">This earlier run saved answered questions only. Unreached questions are unavailable.</p>'}<div class="review-list" data-review-list></div>`;
   const draw=filter=>{
     const filtered=rows.filter(row=>filter==='all'||row.status===filter);
     root.querySelector('[data-review-list]').innerHTML=filtered.map(row=>{
@@ -288,6 +340,7 @@ function renderRunDetail(session,root,fromHistory){
   root.querySelector('[data-run-history]').onclick=()=>{historyDetailId=null;showSimTab('history')};
   root.querySelector('[data-run-again]').onclick=()=>{setSimAnswerMode(session.config?.answerMode==='typed'?'typed':'choice');setSimAllowSkip(session.config?.allowSkip===true);showSimTab('play');startSimulation()};
   root.querySelector('[data-coach]').onclick=()=>openCoachPractice(rec);
+  renderSupport();
 }
 function fmt(sec){sec=Math.max(0,Math.floor(sec));return`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`}
 function applyAuthUser(user){
@@ -296,7 +349,8 @@ function applyAuthUser(user){
   authEpoch++;currentUser=user;currentProfile=null;adminStats=null;historyDetailId=null;
   if(state.running)quitSession(state.sim);
   sessions=user?readSessions(userStore(user.id)):loadGuestSessions();
-  $('password').value='';$('profileMsg').textContent='';$('accountMsg').textContent='';
+  $('password').value='';$('newPassword').value='';$('confirmPassword').value='';$('profileMsg').textContent='';$('accountMsg').textContent='';$('transferMsg').textContent='';
+  if(!user){recoveryUserId=null;authView='account'}
   cloudStatus=user?'Loading saved progress…':'Guest data is stored in this browser.';
   // Clear private result views as well as the profile when the account changes.
   quitSession(true);resetPracticeView();renderAll();
@@ -304,9 +358,15 @@ function applyAuthUser(user){
 }
 async function initAuth(){
   if(!supabase){cloudStatus='Account login could not load. Guest mode still works.';$('authMsg').textContent=cloudStatus;renderAll();return}
-  supabase.auth.onAuthStateChange((_event,session)=>applyAuthUser(session?.user||null));
+  supabase.auth.onAuthStateChange((event,session)=>{applyAuthUser(session?.user||null);if(event==='PASSWORD_RECOVERY'&&session?.user&&!incomingAuth.error)openRecovery(session.user.id)});
   const epoch=authEpoch;
-  try{const{data,error}=await supabase.auth.getSession();if(error)throw error;if(epoch===authEpoch)applyAuthUser(data.session?.user||null)}catch(error){$('authMsg').textContent=error.message}
+  try{
+    const{data,error}=await supabase.auth.getSession();if(error)throw error;if(epoch===authEpoch)applyAuthUser(data.session?.user||null);
+    if(incomingAuth.error){showLinkError(incomingAuth.error)}
+    else if(incomingAuth.recovery){if(currentUser)openRecovery(currentUser.id);else showLinkError('This reset link is invalid or has expired. Request a new link.')}
+    else if(incomingAuth.callback&&currentUser){setPage('account');$('accountMsg').textContent='Email confirmed. You are signed in.'}
+  }catch(error){if(incomingAuth.callback||incomingAuth.recovery)showLinkError('This email link could not be verified. Request a new link.');else $('authMsg').textContent=authErrorMessage(error)}
+  finally{clearAuthLocation()}
 }
 async function signOutAccount(){
   if(!supabase||!currentUser)return;
@@ -317,20 +377,84 @@ async function signOutAccount(){
   finally{button.disabled=false;button.textContent='Sign out on this device'}
 }
 async function retrySync(){try{await loadProfile();await syncAll()}catch(error){cloudStatus='Sync needs a retry. '+error.message;renderAuth()}}
-function authRedirectUrl(){return location.protocol==='file:'?'http://localhost:3000/index.html':`${location.origin}${location.pathname}`}
+function authRedirectUrl(recovery=false){const url=new URL(location.protocol==='file:'?'http://localhost:3000/index.html':`${location.origin}${location.pathname}`);if(recovery)url.searchParams.set('auth','recovery');return url.href}
 async function authAction(event){
-  event?.preventDefault();if(!supabase){$('authMsg').textContent='Account login could not load. Guest mode still works.';return}
+  event?.preventDefault();if(authBusy)return;if(!supabase){$('authMsg').textContent='Account login could not load. Guest mode still works.';return}
   const button=$('authButton'),mode=authMode,email=$('email').value.trim(),password=$('password').value,username=cleanUsername($('signupUsername').value);
   if(mode==='signup'&&!validUsername(username)){$('authMsg').textContent='Choose a username with 3–20 letters, numbers, or underscores.';return}
+  if(mode==='signup'&&password.length<8){$('authMsg').textContent='Choose a password with at least 8 characters.';return}
   if(!$('signedOut').reportValidity())return;
-  button.disabled=true;button.textContent=mode==='signup'?'Creating account…':'Signing in…';$('authMsg').textContent='';
-  try{const res=mode==='signup'?await supabase.auth.signUp({email,password,options:{emailRedirectTo:authRedirectUrl(),data:{username}}}):await supabase.auth.signInWithPassword({email,password});if(res.error)throw res.error;if(res.data.session)applyAuthUser(res.data.session.user);$('authMsg').textContent=mode==='signup'&&!res.data.session?'Account created. Check your email to confirm it, then sign in.':'Signed in.'}catch(error){$('authMsg').textContent=error.message}finally{button.disabled=false;button.textContent=authMode==='signup'?'Create account':'Sign in'}
+  const epoch=authEpoch;
+  setAuthBusy(true);button.textContent=mode==='signup'?'Creating account…':'Signing in…';$('authMsg').textContent='';
+  try{
+    const captchaToken=loginCaptcha.token();
+    const res=mode==='signup'?await supabase.auth.signUp({email,password,options:{emailRedirectTo:authRedirectUrl(),data:{username},captchaToken}}):await supabase.auth.signInWithPassword({email,password,options:{captchaToken}});
+    if(res.error)throw res.error;if(epoch!==authEpoch&&currentUser?.id!==res.data.session?.user?.id)return;
+    if(res.data.session)applyAuthUser(res.data.session.user);
+    $('authMsg').textContent=mode==='signup'&&!res.data.session?'Check your email for a confirmation link. If you already have an account, sign in or reset your password.':'Signed in.';
+    $('password').value='';
+  }catch(error){if(epoch===authEpoch)$('authMsg').textContent=authErrorMessage(error)}finally{loginCaptcha.reset();setAuthBusy(false);button.textContent=authMode==='signup'?'Create account':'Sign in'}
 }
-function renderAll(){renderHome();renderProgress();renderAuth();if(!$('simHistory').classList.contains('hidden'))renderSimHistory()}
+function setAuthBusy(value){authBusy=value;for(const id of['authButton','emailHelpSubmit','savePassword','emailHelpBack','cancelRecovery','forgotPassword','resendConfirmation'])$(id).disabled=value;qsa('[data-auth]').forEach(b=>b.disabled=value)}
+function setAuthMode(mode){if(authBusy)return;authMode=mode;authView='account';authViewEpoch++;qsa('[data-auth]').forEach(x=>x.classList.toggle('active',x.dataset.auth===mode));$('signupUsernameField').classList.toggle('hidden',mode!=='signup');$('authButton').textContent=mode==='signup'?'Create account':'Sign in';$('password').autocomplete=mode==='signup'?'new-password':'current-password';if(mode==='signup')$('password').setAttribute('minlength','8');else $('password').removeAttribute('minlength');$('password').placeholder=mode==='signup'?'At least 8 characters':'Your password';$('password').value='';$('authMsg').textContent='';renderAuth();prepareCaptcha()}
+function openEmailHelp(mode){if(authBusy)return;helpMode=mode;authView='help';authViewEpoch++;$('helpEmail').value=currentUser?.email||$('email').value.trim();$('emailHelpTitle').textContent=mode==='reset'?'Reset password':'Resend confirmation';$('emailHelpSubmit').textContent=mode==='reset'?'Send reset link':'Send confirmation link';$('emailHelpMsg').textContent='';setPage('account');$('helpEmail').focus()}
+function closeAccountHelp(){if(authBusy)return;authView='account';authViewEpoch++;recoveryUserId=null;$('newPassword').value=$('confirmPassword').value='';$('authLinkMsg').classList.add('hidden');clearAuthLocation();renderAuth();prepareCaptcha()}
+function openRecovery(userId){authView='recovery';authViewEpoch++;recoveryUserId=userId;$('newPassword').value=$('confirmPassword').value='';$('recoveryMsg').textContent='';setPage('account');$('newPassword').focus()}
+function showLinkError(message){authView='help';helpMode=incomingAuth.recovery?'reset':'resend';$('emailHelpTitle').textContent=helpMode==='reset'?'Reset password':'Resend confirmation';$('emailHelpSubmit').textContent=helpMode==='reset'?'Send reset link':'Send confirmation link';$('authLinkMsg').textContent=message;$('authLinkMsg').classList.remove('hidden');setPage('account')}
+function clearAuthLocation(){if(typeof history==='undefined'||!history.replaceState)return;const url=new URL(location.href);for(const key of['auth','code','error','error_code','error_description'])url.searchParams.delete(key);const hash=new URLSearchParams(url.hash.slice(1));if(['access_token','refresh_token','error','error_code','type'].some(key=>hash.has(key)))url.hash='';history.replaceState(null,'',url.pathname+url.search+url.hash)}
+function prepareCaptcha(){loginCaptcha.remove();emailCaptcha.remove();if(currentPage!=='account'||!siteConfig.turnstileSiteKey||authView==='recovery')return;const help=authView==='help';if(!help&&currentUser)return;const target=help?emailCaptcha:loginCaptcha,retry=$(help?'retryHelpCaptcha':'retryAuthCaptcha');retry.classList.remove('hidden');target.mount().catch(error=>{$(help?'emailHelpMsg':'authMsg').textContent=error.message})}
+async function sendAccountEmail(event){
+  event?.preventDefault();if(authBusy||!$('emailHelp').reportValidity())return;
+  const email=$('helpEmail').value.trim(),mode=helpMode,key=mode+':'+email.toLowerCase(),remaining=Math.ceil(((emailCooldowns.get(key)||0)-Date.now())/1000),epoch=authEpoch,view=authViewEpoch;
+  if(remaining>0){$('emailHelpMsg').textContent=`Please wait ${remaining} seconds before requesting another link.`;return}
+  if(!supabase){$('emailHelpMsg').textContent='Account login could not load. Check your connection and retry.';return}
+  setAuthBusy(true);$('emailHelpSubmit').textContent='Sending...';$('emailHelpMsg').textContent='';
+  try{const captchaToken=emailCaptcha.token();const {error}=mode==='reset'?await supabase.auth.resetPasswordForEmail(email,{redirectTo:authRedirectUrl(true),captchaToken}):await supabase.auth.resend({type:'signup',email,options:{emailRedirectTo:authRedirectUrl(),captchaToken}});if(error)throw error;emailCooldowns.set(key,Date.now()+60000);if(epoch===authEpoch&&view===authViewEpoch)$('emailHelpMsg').textContent=mode==='reset'?'If this address has an account, a password reset link is on its way. Check your inbox and spam folder.':'If this address needs confirmation, a new link is on its way. Check your inbox and spam folder.'}
+  catch(error){if(error?.status===429)emailCooldowns.set(key,Date.now()+60000);if(epoch===authEpoch&&view===authViewEpoch)$('emailHelpMsg').textContent=authErrorMessage(error)}
+  finally{emailCaptcha.reset();setAuthBusy(false);$('emailHelpSubmit').textContent=helpMode==='reset'?'Send reset link':'Send confirmation link'}
+}
+async function saveRecoveredPassword(event){
+  event?.preventDefault();if(authBusy||!$('passwordRecovery').reportValidity())return;
+  const password=$('newPassword').value;if(password.length<8){$('recoveryMsg').textContent='Use at least 8 characters.';return}if(password!==$('confirmPassword').value){$('recoveryMsg').textContent='The passwords do not match.';return}
+  if(!supabase||!currentUser||currentUser.id!==recoveryUserId){showLinkError('Your reset session has expired. Request a new link.');return}
+  const id=currentUser.id,epoch=authEpoch;setAuthBusy(true);$('savePassword').textContent='Saving...';$('recoveryMsg').textContent='';
+  try{const verified=await supabase.auth.getUser();if(verified.error||verified.data.user?.id!==id)throw new Error('Your reset session has expired. Request a new link.');if(epoch!==authEpoch)return;const {error}=await supabase.auth.updateUser({password});if(error)throw error;if(epoch!==authEpoch)return;authView='account';recoveryUserId=null;$('newPassword').value=$('confirmPassword').value='';clearAuthLocation();renderAuth();$('accountMsg').textContent='Password updated.'}
+  catch(error){if(epoch===authEpoch)$('recoveryMsg').textContent=authErrorMessage(error)}finally{setAuthBusy(false);$('savePassword').textContent='Save new password'}
+}
+function exportProgress(){
+  if(state.running){$('transferMsg').textContent='Finish or quit the active session first.';return}
+  try{const backup=createBackup(sessions,currentUser?.id||null),raw=JSON.stringify(backup,null,2);if(new Blob([raw]).size>MAX_BACKUP_BYTES)throw new Error('This history is larger than the 20 MB backup limit. Contact support before moving.');const url=URL.createObjectURL(new Blob([raw],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download=`quantrush-progress-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('transferMsg').textContent=`Exported ${backup.sessions.length} saved sessions. Keep this file private.`}catch(error){$('transferMsg').textContent=error.message}
+}
+async function importProgressFile(file){
+  if(!file)return;const epoch=authEpoch,userId=currentUser?.id||null;
+  if(state.running){$('transferMsg').textContent='Finish or quit the active session first.';return}
+  $('importProgress').disabled=true;$('transferMsg').textContent='Checking backup...';
+  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Choose a backup smaller than 20 MB.');const incoming=parseBackup(await file.text(),userId);if(epoch!==authEpoch||state.running)throw new Error('The account or session changed. Import the file again when ready.');const merged=mergeProgress(sessions,incoming),added=merged.length-sessions.length;if(!writeSessions(userId?userStore(userId):GUEST_STORE,merged))throw new Error('The backup could not fit in browser storage. Existing progress is unchanged.');sessions=merged;renderAll();$('transferMsg').textContent=`Imported ${added} sessions. ${incoming.length-added} duplicates left unchanged.`;if(userId)await syncAll()}
+  catch(error){if(epoch===authEpoch)$('transferMsg').textContent=error.message}finally{$('importProgress').disabled=state.running;$('progressFile').value=''}
+}
+function renderBetaAdmin(){
+  if(!isAdmin())return;
+  for(const[id,value]of[['feedbackResults',siteConfig.feedbackResultsUrl],['feedbackSheet',siteConfig.feedbackSheetUrl]]){let valid=false;try{const url=new URL(value);valid=url.protocol==='https:'&&url.hostname==='docs.google.com'&&!url.username&&!url.password}catch{}$(id).classList.toggle('hidden',!valid);if(valid)$(id).href=value;else $(id).removeAttribute('href')}
+  $('feedbackAdminStatus').textContent=feedbackUrl(siteConfig)?'Responses and charts are private to your Google account.':'Connect the Google Form to enable responses and analytics.';
+  const pending=releaseBlockers(siteConfig);$('releaseBlockers').innerHTML=pending.length?pending.map(message=>`<li>${escapeHtml(message)}</li>`).join(''):'<li>All recorded release checks passed.</li>';
+}
+function renderSupport(){
+  const feedback=feedbackUrl(siteConfig);$('feedbackLink').classList.toggle('hidden',!feedback);if(feedback)$('feedbackLink').href=feedback;
+  $('releaseVersion').textContent=siteConfig.release;
+  const resultPage=(currentPage==='sim'&&($('simGame').classList.contains('results')||$('simHistory').classList.contains('results')))||(currentPage==='practice'&&state.attempts.length>0);
+  $('supportLinks').classList.toggle('hidden',state.running||!(['home','account','privacy'].includes(currentPage)||resultPage));
+  $('privacyContact').textContent=feedback?'Feedback and account/data requests use the Feedback link below.':'The contact form is not connected yet. Wider public rollout remains on hold.';
+  let migrated=false;try{const url=new URL(siteConfig.productionUrl);migrated=url.protocol==='https:'&&url.hostname.endsWith('.pages.dev')&&location.href.startsWith(siteConfig.legacyUrl);if(migrated)$('newSiteLink').href=url.href}catch{}
+  $('migrationNotice').classList.toggle('hidden',!migrated||state.running);
+}
+function renderAll(){renderHome();renderProgress();renderAuth();renderSupport();if(!$('simHistory').classList.contains('hidden'))renderSimHistory()}
 qsa('.navbtn').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));qsa('[data-go]').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.go)));$('viewProgress').onclick=()=>setPage('progress');$('accountPill').onclick=()=>setPage('account');$('quickPractice').onclick=()=>openCoachPractice(recommendation(),true);$('suggestionButton').onclick=()=>openCoachPractice(recommendation());qsa('#difficulty button').forEach(b=>b.addEventListener('click',()=>setDiff(b.dataset.diff)));qsa('[data-answer-format]').forEach(b=>b.addEventListener('click',()=>setAnswerMode(b.dataset.answerFormat)));qsa('[data-sim-answer-format]').forEach(b=>b.addEventListener('click',()=>setSimAnswerMode(b.dataset.simAnswerFormat)));$('practiceMode').onchange=()=>{$('durationField').classList.toggle('hidden',$('practiceMode').value==='untimed');if(!state.running)resetPracticeView()};$('duration').onchange=()=>{$('customDuration').classList.toggle('hidden',$('duration').value!=='custom');$('customDurationHint').textContent='Set any duration from 5 seconds to 99:59.';$('customDurationHint').classList.remove('duration-error');if(!state.running)resetPracticeView()};for(const id of['customMinutes','customSeconds'])$(id).oninput=()=>{$('customDurationHint').textContent='Set any duration from 5 seconds to 99:59.';$('customDurationHint').classList.remove('duration-error');if(!state.running)resetPracticeView()};$('startPractice').onclick=startPractice;$('confirmSim').onclick=startSimulation;$('restartPractice').onclick=()=>restartSession(false);$('quitPractice').onclick=()=>quitSession(false);$('restartSim').onclick=()=>restartSession(true);$('quitSim').onclick=()=>quitSession(true);
 $('simHideScore').onchange=e=>setSimHideScore(e.target.checked);
 $('simAllowSkip').onchange=e=>setSimAllowSkip(e.target.checked);
-qsa('[data-auth]').forEach(b=>b.onclick=()=>{authMode=b.dataset.auth;qsa('[data-auth]').forEach(x=>x.classList.toggle('active',x===b));$('signupUsernameField').classList.toggle('hidden',authMode!=='signup');$('authButton').textContent=authMode==='signup'?'Create account':'Sign in';$('password').autocomplete=authMode==='signup'?'new-password':'current-password';$('authMsg').textContent=''});$('signedOut').onsubmit=authAction;$('saveUsername').onclick=saveUsername;$('signOut').onclick=signOutAccount;$('syncNow').onclick=retrySync;$('simPlayTab').onclick=()=>showSimTab('play');$('simHistoryTab').onclick=()=>showSimTab('history');$('refreshAdmin').onclick=()=>loadAdminStats();
+qsa('[data-auth]').forEach(b=>b.onclick=()=>setAuthMode(b.dataset.auth));$('signedOut').onsubmit=authAction;$('saveUsername').onclick=saveUsername;$('signOut').onclick=signOutAccount;$('syncNow').onclick=retrySync;$('simPlayTab').onclick=()=>showSimTab('play');$('simHistoryTab').onclick=()=>showSimTab('history');$('refreshAdmin').onclick=()=>loadAdminStats();
+$('forgotPassword').onclick=()=>openEmailHelp('reset');$('resendConfirmation').onclick=()=>openEmailHelp('resend');$('resetMyPassword').onclick=()=>openEmailHelp('reset');$('emailHelpBack').onclick=closeAccountHelp;$('cancelRecovery').onclick=closeAccountHelp;$('emailHelp').onsubmit=sendAccountEmail;$('passwordRecovery').onsubmit=saveRecoveredPassword;
+$('retryAuthCaptcha').onclick=prepareCaptcha;$('retryHelpCaptcha').onclick=prepareCaptcha;$('exportProgress').onclick=exportProgress;$('importProgress').onclick=()=>$('progressFile').click();$('progressFile').onchange=event=>importProgressFile(event.target.files[0]);$('privacyLink').onclick=()=>setPage('privacy');$('migrationTransfer').onclick=()=>{setPage('account');$('transferTitle').scrollIntoView({block:'center'})};
+window.addEventListener('online',()=>{if(currentUser&&!syncTask)syncAll()});
 const savedTheme=localStorage.getItem(THEME)||'light';$('theme').value=savedTheme;function applyTheme(v){if(v==='device')document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';else document.documentElement.dataset.theme=v}applyTheme(savedTheme);$('theme').onchange=()=>{localStorage.setItem(THEME,$('theme').value);applyTheme($('theme').value);if(currentUser)upsertProfile().catch(error=>{cloudStatus='Profile sync needs a retry. '+error.message;renderAuth()})};matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if($('theme').value==='device')applyTheme('device')});
 setDiff(recommendedDiff());setAnswerMode('choice');setSimAnswerMode('choice');$('simHideScore').checked=state.simHideScore;$('simAllowSkip').checked=state.simAllowSkip;renderAll();initAuth();
 </script>

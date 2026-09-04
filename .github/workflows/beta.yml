@@ -1,0 +1,91 @@
+name: QuantRush checks and release
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: beta-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-site
+          path: dist/site/
+          include-hidden-files: true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failures
+          path: |
+            test-results/
+            playwright-report/
+  legacy:
+    if: github.repository == 'romaobraz04/quantrush' && github.ref == 'refs/heads/main' && vars.LEGACY_DEPLOY_ENABLED != 'false'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-site
+          path: dist/site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/site
+      - uses: actions/deploy-pages@v4
+        id: deploy
+  cloudflare-assets:
+    if: github.repository == 'romaobraz04/quantrush' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-site
+          path: dist/site
+      - name: Publish verified assets for Cloudflare Git integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          parent=()
+          remote_ref=$(git ls-remote --heads origin refs/heads/cloudflare-pages)
+          if [ -n "$remote_ref" ]; then
+            git fetch origin refs/heads/cloudflare-pages:refs/remotes/origin/cloudflare-pages
+            parent=(-p refs/remotes/origin/cloudflare-pages)
+          fi
+          # A separate index keeps source/reference files out of the published branch.
+          export GIT_DIR="$GITHUB_WORKSPACE/.git"
+          export GIT_WORK_TREE="$GITHUB_WORKSPACE/dist/site"
+          export GIT_INDEX_FILE="$RUNNER_TEMP/verified-site-index"
+          cd "$GIT_WORK_TREE"
+          test -s index.html && test -s _headers && test -s site-config.mjs
+          git add --all .
+          tree=$(git write-tree)
+          commit=$(git commit-tree "$tree" "${parent[@]}" -m "Verified build of $GITHUB_SHA")
+          git push origin "$commit:refs/heads/cloudflare-pages"

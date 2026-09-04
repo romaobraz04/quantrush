@@ -2,3 +2,9 @@ dist/
 *.tar.gz
 sources/
 AGENTS.md
+node_modules/
+.env*
+!.env.example
+playwright-report/
+test-results/
+.wrangler/

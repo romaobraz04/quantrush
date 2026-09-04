@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { appHarness } from './app-harness.mjs';
 import * as core from '../training-core.mjs';
 
 const { structuredProblem, simulationPlan, simulationSummary, reviewQuestions, calculateReadiness, SKILLS, BLUEPRINT } = core;
@@ -77,21 +77,6 @@ test('score and review distinguish wrong, skipped and unreached questions', () =
   assert.equal(reviewQuestions({ attempts: run.attempts }).length, 3);
 });
 
-function appHarness() {
-  const elements = new Map(), storage = new Map();
-  const get = id => {
-    if (!elements.has(id)) elements.set(id, { value: '', textContent: '', innerHTML: '', disabled: false, classList: { add() {}, remove() {}, toggle() {}, contains() { return true; } }, style: { setProperty() {} }, querySelector() { return get('child'); }, querySelectorAll() { return []; }, focus() {}, setAttribute() {}, reportValidity() { return true; } });
-    return elements.get(id);
-  };
-  const context = vm.createContext({ ...core, document: { getElementById: get, querySelectorAll: () => [] }, localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, v) => storage.set(key, v), removeItem: key => storage.delete(key) }, console, setTimeout: () => 0, clearInterval() {}, setInterval: () => 0, crypto: { randomUUID: () => 'test-run' }, confirm: () => true, Intl, location: { protocol: 'http:', origin: 'http://localhost', pathname: '/index.html' } });
-  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const script = html.split('<script type="module">')[1].split('</script>')[0];
-  const code = script.slice(script.indexOf('const SUPABASE_URL'), script.indexOf("\nqsa('.navbtn')")).split('\n').filter(line => !line.startsWith('try{const mod=await import(')).join('\n');
-  vm.runInContext(code, context);
-  const run = code => vm.runInContext(code, context);
-  run('renderAll=()=>{};renderAuth=()=>{};renderAdmin=()=>{};renderProblem=()=>{};renderGameStats=()=>{};renderRunDetail=()=>{};');
-  return { run, context, get, storage };
-}
 test('all generated choices are unique and contain one exact answer', () => {
   const { run } = appHarness();
   run(`for(let n=0;n<6000;n++){const p=n%2?genFor(cats[n%8],['easy','medium','hard'][n%3]):genFor(cats[n%8],'hard',{simulation:true,signed:n%5===0});const options=makeChoices(p);if(options.length!==4||options.filter(o=>correct(o.label,p)).length!==1||options.some(o=>!Number.isFinite(parseAnswer(o.label))))throw Error(JSON.stringify({p,options}));}`);
