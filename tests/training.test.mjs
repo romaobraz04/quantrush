@@ -170,3 +170,13 @@ test('late cloud responses cannot leak a previous account into the next account'
   assert.equal(run('sessions.length'), 1);assert.equal(run('sessions[0].id'), 'b-history');
   assert.equal(JSON.parse(storage.get('quanttempo_user_sessions_v5_b'))[0].id, 'b-history');
 });
+
+test('background progress sync does not overwrite a username changed on another device', async () => {
+  const { run, context } = appHarness();
+  let written;
+  context.fakeCloud = { from: () => ({ upsert(data) { written = data; return this; }, select() { return this; }, single: async () => ({ data: { display_name: 'UpdatedElsewhere' } }) }) };
+  run("supabase=fakeCloud;currentUser={id:'player',email:'player@example.invalid'};currentProfile={display_name:'OldName'}");
+  await run('upsertProfile()');
+  assert.equal(Object.hasOwn(written, 'display_name'), false);
+  assert.equal(run('visibleUsername()'), 'UpdatedElsewhere');
+});
