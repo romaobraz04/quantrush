@@ -1,6 +1,6 @@
 # Public Beta Release Record
 
-Status: implementation prepared; public promotion is blocked. No paid services, subscriptions, domains or security upgrades have been purchased.
+Status: deployed for controlled testing at https://quantrush.pages.dev/; public promotion is blocked. No paid services, subscriptions, domains or security upgrades have been purchased.
 
 ## Verified on 2026-09-04
 
@@ -41,11 +41,19 @@ Reference: [Supabase CAPTCHA integration](https://supabase.com/docs/guides/auth/
 
 ## Hosting Gate
 
-The existing site remains available at `https://romaobraz04.github.io/quantrush/`. The owner authorized Cloudflare for `romaobraz04/quantrush` and requested deployment. Cloudflare's setup assigns `https://quantrush.pages.dev/`; live verification is required after deployment.
+The existing site remains available at `https://romaobraz04.github.io/quantrush/`. The owner authorized Cloudflare for `romaobraz04/quantrush` and requested deployment. Cloudflare deployed `https://quantrush.pages.dev/` on 2026-09-04.
+
+- Source commit: `53d1ca27bd87a012c69b3b9ddf276914ad233151`; generated asset commit: `ea362b297c5ba6868f245ead39d547b48dd88b13`.
+- [GitHub verification and legacy deployment](https://github.com/romaobraz04/quantrush/actions/runs/33893636668) passed. All 31 unit tests, 27 browser scenarios and the full-game checks passed locally; the same suite passed in CI.
+- Cloudflare deployment: `6d9b5a8e-29c1-4910-809d-d7d2e9feb5f5`. Both live origins return HTTP 200 and their HTML hashes match the tested artifact. Cloudflare serves the generated CSP, frame restrictions and other security headers.
+- Full guest gameplay checks passed against the actual Cloudflare address: typed/choice runs, timeout, optional skipping, net score, all-question review, history, coach action and mobile layout. Live account/help views were inspected with the real SDK loaded and no console errors. These checks do not verify real email delivery or cross-device account sync.
+- Reference, documentation and test paths return the app fallback, not the underlying files. The published branch contains only the 13 allowlisted application files/assets.
+- The old site displays the migration notice and still shows the owner's existing saved history. No history was removed or copied between accounts.
+- Supabase Site URL is now `https://quantrush.pages.dev/`. Its allowlist retains the two existing entries and adds seven exact root/index/recovery callbacks for the Cloudflare and GitHub sites. Saved settings were read back successfully; actual confirmation/recovery delivery remains unverified.
 
 GitHub Pages Source was changed from **Deploy from a branch** to **GitHub Actions** before pushing. The workflow runs tests and publishes only the verified `dist/site` artifact. Legacy updates remain enabled unless repository variable `LEGACY_DEPLOY_ENABLED=false` is set after migration.
 
-For Cloudflare Pages Free, use the same repository with production branch `cloudflare-pages`. The workflow writes only the already-tested artifact to this generated branch, preserving its commit history. Configure framework None, output directory `.`, build command `test "$CF_PAGES_BRANCH" = cloudflare-pages`, and disable preview branches. The branch check also prevents accidental source-branch publication. There is no Cloudflare API token and no second independent build pipeline that can bypass tests.
+Cloudflare Pages uses the same repository with production branch `cloudflare-pages`. The workflow writes only the already-tested artifact to this generated branch, preserving its commit history. Framework None, output directory `.`, and build command `test "$CF_PAGES_BRANCH" = cloudflare-pages` are configured. Automatic production deployments remain enabled. Disabling automatic preview branches awaits the owner's approval after browser action review requested confirmation; no workaround was used. The active branch check prevents accidental source-branch publication even while preview builds remain enabled. There is no Cloudflare API token and no second independent build pipeline that can bypass tests.
 
 Deployment for controlled testing and public promotion are distinct: automated checks gate each deployment; `pnpm release:check` gates broader promotion. The latter remains blocked until real email, account, Turnstile and physical-device checks pass. Deploying now does not change those recorded flags.
 

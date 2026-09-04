@@ -24,7 +24,7 @@ The server uses the application-only build in `dist/site`, including its securit
 
 ## Hosting
 
-The build copies only application assets into `dist/site`; never publish the source repository root, `sources`, test output, backups, or credentials. GitHub Pages uses GitHub Actions. After tests pass, the workflow deploys the verified artifact to the legacy site and commits the same assets to the generated `cloudflare-pages` branch. Cloudflare's Git integration deploys only that branch, with previews disabled. No separate Cloudflare API token is needed. Set `LEGACY_DEPLOY_ENABLED=false` only when the migration is complete and the old site can stop receiving updates.
+The build copies only application assets into `dist/site`; never publish the source repository root, `sources`, test output, backups, or credentials. GitHub Pages uses GitHub Actions. After tests pass, the workflow deploys the verified artifact to the legacy site and commits the same assets to the generated `cloudflare-pages` branch. Cloudflare's build command rejects every other branch. Disabling automatic preview builds is pending owner approval; the branch guard already prevents their publication. No separate Cloudflare API token is needed. Set `LEGACY_DEPLOY_ENABLED=false` only when the migration is complete and the old site can stop receiving updates.
 
 `site-config.mjs` contains only public addresses, the public Turnstile site key, and recorded release checks. The Supabase browser key is publishable; Row Level Security enforces access. SMTP credentials and the Turnstile secret belong only in Supabase.
 
