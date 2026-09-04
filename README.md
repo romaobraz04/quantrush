@@ -18,6 +18,8 @@ The current question mix is `structured-v5`. It combines signed integers, exact 
 
 Finished simulations store all 80 questions in the existing session `config` JSON field. History includes date/time, answer format, net score, and question review. Earlier runs retain their original records; unreached questions cannot be recovered from versions that never saved them. Quit and Restart discard unfinished runs.
 
+The lobby's Allow skipping toggle is off by default. When enabled, Skip, the choice-mode S key, and blank Enter in typed mode advance for zero points. The setting is locked during the run and saved with its configuration. Restart and Try again preserve that run's setting; a fresh page load defaults to off.
+
 Readiness is a heuristic, not a pass probability. Baseline eligibility is unchanged. Confidence grows gradually with difficulty-weighted evidence, with diminishing credit for repeated identical questions. Recent simulation net scores contribute 35% of the index once simulations exist; earlier, easier mixes receive lower confidence weight. Original stored scores and answers are retained; history displays net scores from correct and wrong answers.
 
 ## Verification

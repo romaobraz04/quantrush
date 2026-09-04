@@ -101,13 +101,45 @@ test('all generated choices are unique and contain one exact answer', () => {
 });
 test('running simulation uses its pre-generated deck, then persists all 80 questions', () => {
   const { run } = appHarness();
-  run("state.sim=true;state.running=true;state.started=Date.now();state.qStarted=Date.now();state.simProblems=Array.from({length:80},(_,i)=>({op:'add',diff:'hard',prompt:i+' + 1',ans:i+1,format:'number'}));state.problem=state.simProblems[0];record(true,'1');record(false,'99');record(null,null)");
+  run("state.sim=true;state.simAllowSkip=true;state.running=true;state.started=Date.now();state.qStarted=Date.now();state.simProblems=Array.from({length:80},(_,i)=>({op:'add',diff:'hard',prompt:i+' + 1',ans:i+1,format:'number'}));state.problem=state.simProblems[0];record(true,'1');record(false,'99');record(null,null)");
   assert.equal(run('state.problem.prompt'), '3 + 1');
   assert.equal(run('simulationScore()'), 0);
   run('finish()');
   assert.equal(run('sessions[0].config.questions.length'), 80);
   assert.equal(run('sessions[0].attempts.length'), 3);
+  assert.equal(run('sessions[0].config.allowSkip'), true);
   assert.equal(run('reviewQuestions(sessions[0])[79].status'), 'unreached');
+});
+test('skipping is off by default and blank typed answers do not advance or lose points', () => {
+  const { run, get } = appHarness();
+  assert.equal(run('state.simAllowSkip'), false);
+  run('startSimulation();skipSimulation();record(null,null)');
+  get('child').value = '';
+  run('submitTyped(true)');
+  get('child').value = '   ';
+  run('submitTyped(true)');
+  assert.equal(run('state.attempts.length'), 0);
+  assert.equal(run('simulationScore()'), 0);
+  run('finish()');
+  assert.equal(run('sessions[0].config.allowSkip'), false);
+  assert.equal(run('simulationSummary(sessions[0]).unreached'), 80);
+});
+test('enabled skipping scores zero, persists on restart, and is locked during a run', () => {
+  const { run, get } = appHarness();
+  run('setSimAllowSkip(true);startSimulation();skipSimulation()');
+  assert.equal(run('state.attempts.length'), 1);
+  assert.equal(run('state.attempts[0].correct'), null);
+  assert.equal(run('simulationScore()'), 0);
+  get('child').value = '';
+  run('submitTyped(true)');
+  assert.equal(run('state.attempts.length'), 2);
+  run('setSimAllowSkip(false)');
+  assert.equal(run('state.simAllowSkip'), true);
+  run('restartSession(true)');
+  assert.equal(run('state.simAllowSkip'), true);
+  assert.equal(run('state.attempts.length'), 0);
+  run('quitSession(true);setSimAllowSkip(false);startSimulation();skipSimulation()');
+  assert.equal(run('state.attempts.length'), 0);
 });
 test('quitting and restarting discard unfinished progress', () => {
   const { run } = appHarness();

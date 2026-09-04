@@ -23,7 +23,24 @@ function solve(prompt) {
     await page.clock.install();
     await page.goto(process.env.QUANTRUSH_URL || 'http://localhost:4173/index.html');
     await page.getByRole('button', { name: 'Enter simulation', exact: true }).click();
+    assert.equal(await page.locator('#simAllowSkip').isChecked(), false);
+    assert.doesNotMatch(await page.locator('#simFormatNote').textContent(), /Press S|Blank Enter|0 skipped/);
+    await page.screenshot({ path: path.join(output, 'skip-toggle-desktop.png'), animations: 'disabled' });
+    await page.locator('#confirmSim').click();
+    assert.equal(await page.locator('#simGame [data-skip]').count(), 0);
+    await page.locator('#simGame').press('s');
+    assert.equal(await page.locator('#simAnswered').textContent(), '0 / 80');
+    await page.locator('#quitSim').click();
     await page.locator('[data-sim-answer-format="typed"]').click();
+    await page.locator('#confirmSim').click();
+    assert.equal(await page.locator('#simGame [data-skip]').count(), 0);
+    await page.getByRole('textbox', { name: 'Your answer' }).press('Enter');
+    assert.equal(await page.locator('#simAnswered').textContent(), '0 / 80');
+    assert.equal(await page.locator('#simScore').textContent(), '0');
+    await page.locator('#quitSim').click();
+    await page.locator('label[for="simAllowSkip"]').click();
+    assert.equal(await page.locator('#simAllowSkip').isChecked(), true);
+    assert.match(await page.locator('#simFormatNote').textContent(), /Blank Enter skips/);
     await page.locator('label[for="simHideScore"]').click();
     await page.locator('#confirmSim').click();
     assert.equal(await page.locator('#simScore').textContent(), '—');
@@ -50,6 +67,7 @@ function solve(prompt) {
     assert.equal(await page.locator('.history-run').count(), 1);
     await page.reload();
     await page.getByRole('button', { name: 'Enter simulation', exact: true }).click();
+    assert.equal(await page.locator('#simAllowSkip').isChecked(), false);
     await page.getByRole('tab', { name: 'Run history' }).click();
     assert.equal(await page.locator('.history-run').count(), 1);
     await page.locator('.history-run').click();
@@ -66,7 +84,10 @@ function solve(prompt) {
     await page.getByRole('button', { name: '⚡ 80 in 8', exact: true }).click();
     await page.getByRole('tab', { name: 'Run history', exact: true }).click();
     await page.locator('#simHistory [data-run-again]').click();
+    assert.equal(await page.locator('#simGame [data-skip]').count(), 1);
     await page.locator('#quitSim').click();
+    await page.screenshot({ path: path.join(output, 'skip-toggle-mobile.png'), animations: 'disabled' });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.locator('[data-sim-answer-format="choice"]').click();
     await page.locator('#confirmSim').click();
     await page.screenshot({ path: path.join(output, 'game-mobile.png') });
@@ -74,6 +95,7 @@ function solve(prompt) {
     const skipBox = await page.locator('[data-skip]').boundingBox();
     assert.ok(skipBox.y + skipBox.height < 766, 'Skip must sit above the mobile navigation');
     for (let i = 0; i < 80; i++) {
+      if (i === 0) { await page.locator('#simGame').press('s'); continue; }
       if (i < 3) { await page.locator('[data-skip]').click(); continue; }
       const answer = solve(await page.locator('#simGame .problem').textContent());
       const labels = await page.locator('#simGame .choice > span:last-child').allTextContents();
