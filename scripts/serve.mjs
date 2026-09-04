@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const workspace = fileURLToPath(new URL('../', import.meta.url));
-const types = { '.html': 'text/html; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
+const types = { '.html': 'text/html; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 export async function startServer({ root = path.join(workspace, 'dist/site'), port = 0 } = {}) {
   const headerFile = await readFile(path.join(root, '_headers'), 'utf8');
   const policy = headerFile.match(/^  Content-Security-Policy: (.+)$/m)?.[1];

@@ -10,7 +10,7 @@ await mkdir(path.join(output, 'assets'), { recursive: true });
 const files = ['index.html', 'redesign.css', 'beta.css', 'training-core.mjs', 'beta-core.mjs', 'turnstile.mjs', 'site-config.mjs', '.nojekyll'];
 for (const file of files) await copyFile(path.join(root, file), path.join(output, file));
 for (const file of await readdir(path.join(root, 'assets'))) {
-  if (!/\.(svg|woff2)$/.test(file)) throw new Error(`Unexpected public asset: ${file}`);
+  if (!/\.(svg|woff2)$/.test(file) && !['quantrush-logo.png', 'quantrush-favicon.png'].includes(file)) throw new Error(`Unexpected public asset: ${file}`);
   await copyFile(path.join(root, 'assets', file), path.join(output, 'assets', file));
 }
 const html = (await readFile(path.join(output, 'index.html'), 'utf8')).replace(/\r\n?/g, '\n');

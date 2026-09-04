@@ -59,6 +59,34 @@ async function mockAccount(page, options = {}) {
 async function openAccount(page) { await page.locator('#accountPill').click(); await expect(page.locator('#page-account')).toHaveClass(/active/); }
 async function fits(page) { expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); }
 
+test('the logo and favicon load with real transparency in both themes', async ({ page }, info) => {
+  const errors = await mockAccount(page);
+  await page.goto('/');
+  const logo = page.locator('.mark img');
+  await expect.poll(() => logo.evaluate(img => img.complete && img.naturalWidth)).toBe(512);
+  const alpha = await logo.evaluate(img => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 512;
+    const context = canvas.getContext('2d');
+    context.drawImage(img, 0, 0);
+    return [context.getImageData(0, 0, 1, 1).data[3], context.getImageData(256, 256, 1, 1).data[3]];
+  });
+  expect(alpha).toEqual([0, 255]);
+  const favicon = await page.request.get(await page.locator('link[rel="icon"]').getAttribute('href'));
+  expect(favicon.ok()).toBe(true);
+  expect(favicon.headers()['content-type']).toContain('image/png');
+  expect((await favicon.body())[25]).toBe(6);
+  if (await page.getByRole('combobox', { name: 'Theme' }).isVisible()) {
+    for (const theme of ['Light', 'Dark: Graphite']) {
+      await page.getByRole('combobox', { name: 'Theme' }).selectOption({ label: theme });
+      await expect(logo).toBeVisible();
+      await fits(page);
+      await page.locator('.brand').screenshot({ path: info.outputPath(`logo-${theme === 'Light' ? 'light' : 'dark'}.png`) });
+    }
+  }
+  expect(errors).toEqual([]);
+});
+
 test('old passwords sign in; new accounts require eight characters', async ({ page }, info) => {
   const errors = await mockAccount(page);
   await page.goto('/'); await openAccount(page);
