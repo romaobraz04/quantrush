@@ -30,12 +30,9 @@ References: [SMTP restrictions](https://supabase.com/docs/guides/auth/auth-smtp)
 
 ## Turnstile Gate
 
-The client integration is implemented and tested with a simulated widget; no production key or server secret is configured yet.
+On 2026-09-06, a Free managed Turnstile widget was created for `quantrush.pages.dev` and `romaobraz04.github.io`. Its public site key was deployed to both matching live artifacts before the private secret was entered in Supabase. CAPTCHA enforcement is enabled with Cloudflare Turnstile and remained enabled after the Supabase dashboard was reloaded. The secret is stored only by Supabase and is not present in the repository.
 
-1. Create a Free Turnstile widget for the production Pages hostname and the retained GitHub hostname. Restrict hostnames rather than allowing arbitrary domains. Add localhost only when needed for controlled local checks.
-2. Put only its public site key in `site-config.mjs`. Store its secret in Supabase Auth CAPTCHA settings; never commit it or send it in a client request.
-3. Deploy the matching client to both sites before enabling Supabase enforcement, so old-site sign-in does not break during the transition.
-4. Verify signup, sign-in, password recovery and confirmation resend, including token expiry, retry, blocked-script failure and server rejection of requests without a valid token.
+Automated tests verify short-lived token handling, expiry, retry, widget errors and forwarding a fresh token through sign-up, sign-in, password recovery and confirmation resend. Both live origins load the matching client. A real fresh-browser challenge and each live authentication submission still need to be exercised before public promotion; the owner's existing browser sessions were deliberately left signed in.
 
 Reference: [Supabase CAPTCHA integration](https://supabase.com/docs/guides/auth/auth-captcha).
 
