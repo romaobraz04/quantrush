@@ -8,7 +8,7 @@ Status: deployed for controlled testing at https://quantrush.pages.dev/; public 
 - Email confirmation remains enabled. Minimum new-password length changed to 8 and verified in the Auth dashboard. Existing sign-in passwords are not length-filtered by the app.
 - The owner's existing account is email-confirmed and has the server-controlled `app_metadata.role = admin` role.
 - RLS restricts writes to a player's own rows. Admin reads use `app_metadata`, not player-editable user metadata. No schema or player-session edits were required.
-- Custom SMTP is off: the project still uses the default mailer. It is not suitable for public signup/recovery.
+- Custom SMTP is enabled through Brevo Free using the verified `QuantRush` sender. Supabase stores the SMTP credential; it is not committed or exposed to the client. Brevo currently limits the account to 300 emails per day, while Supabase applies its configured per-user and hourly Auth limits.
 - Google Form owned by your signed-in Google account; editor access Restricted; responder access Anyone with the link. Linked spreadsheet is private to the same owner.
 - Required message/category; optional device, run timestamp/time zone and reply email. No sign-in requirement, automatic email collection, file uploads or public summaries.
 - A signed-out Chromium context submitted the labeled test `QuantRush release check 2026-09-04T15:11:44.720Z`. It is visible in the owner response view and category chart. Anonymous requests to the editor and response spreadsheet do not reveal responses. Retain or remove this test deliberately; exclude it from player analysis.
@@ -17,12 +17,13 @@ Status: deployed for controlled testing at https://quantrush.pages.dev/; public 
 
 ## Email and Auth Gate
 
-Supabase's default mailer limits delivery to project-team addresses and has restrictive quotas. Public promotion must wait for a verified, zero-cost sending configuration and controlled tests outside the team. Do not turn off confirmation, add players as project members, or buy an upgrade as a workaround.
+Supabase's default mailer was replaced with Brevo Free on 2026-09-06. A dashboard-issued recovery email and a production-site recovery request both reached the owner's SAPO mailbox; Brevo recorded both as delivered. The production request passed the deployed Turnstile check and displayed the generic success state.
 
-1. Select and configure a legitimate no-cost SMTP sender. Its sender/domain verification and limits must suit this app. No working public sender has been established yet.
-2. Test signup/confirmation with a controlled address outside the project team, then recovery, expired links and resend. Do not store passwords, tokenized links or email bodies in the repo or test reports.
-3. Confirm a second browser/device restores the same saved history. Exercise failed upload, reconnect, duplicate prevention, sign-out, a second account and guest migration with these real controlled accounts.
-4. Set `emailDeliveryVerified` and `realAccountChecksPassed` only after recording actual successful tests, not merely receiving a successful API response.
+1. Test signup/confirmation with a controlled address outside the project team, then expired links and resend. Do not store passwords, tokenized links or email bodies in the repo or test reports.
+2. The owner's separate Chrome session signed in and restored the cloud history after starting as a guest. Complete the remaining second-account, failed-upload, reconnect, duplicate-prevention and guest-migration checks with controlled real accounts.
+3. Set `emailDeliveryVerified` and `realAccountChecksPassed` only after recording actual successful tests, not merely receiving a successful API response.
+
+The verified sender uses a freemail domain, so Brevo warns that DKIM and DMARC authentication are unavailable. This is acceptable for controlled beta measurement, but delivery to unrelated providers must be checked before promotion. A future owned domain is the proper deliverability upgrade; do not represent the current sender as domain-authenticated.
 
 The only current security-advisor warning is compromised-password detection being disabled. This feature requires a paid Supabase plan and is intentionally not enabled for the no-new-cost beta. Eight-character minimums and Turnstile do not replace breached-password detection.
 
@@ -32,7 +33,7 @@ References: [SMTP restrictions](https://supabase.com/docs/guides/auth/auth-smtp)
 
 On 2026-09-06, a Free managed Turnstile widget was created for `quantrush.pages.dev` and `romaobraz04.github.io`. Its public site key was deployed to both matching live artifacts before the private secret was entered in Supabase. CAPTCHA enforcement is enabled with Cloudflare Turnstile and remained enabled after the Supabase dashboard was reloaded. The secret is stored only by Supabase and is not present in the repository.
 
-Automated tests verify short-lived token handling, expiry, retry, widget errors and forwarding a fresh token through sign-up, sign-in, password recovery and confirmation resend. Both live origins load the matching client. A real fresh-browser challenge and each live authentication submission still need to be exercised before public promotion; the owner's existing browser sessions were deliberately left signed in.
+Automated tests verify short-lived token handling, expiry, retry, widget errors and forwarding a fresh token through sign-up, sign-in, password recovery and confirmation resend. Both live origins load the matching client. A real production challenge and recovery submission succeeded on 2026-09-06. Live sign-up and confirmation-resend submissions still need controlled external-address checks before public promotion.
 
 Reference: [Supabase CAPTCHA integration](https://supabase.com/docs/guides/auth/auth-captcha).
 

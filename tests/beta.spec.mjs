@@ -222,4 +222,6 @@ test('Turnstile requires a fresh token and passes it to the supported auth flows
   await page.getByRole('button', { name: 'Complete test security check', exact: true }).click(); await page.locator('#authButton').click();
   await expect(page.locator('#signedIn')).toBeVisible();
   expect(await page.evaluate(() => qrTest.calls.find(c => c.type === 'signin').options.captchaToken)).toMatch(/^test-token-/);
+  await page.locator('#signOut').click();
+  await expect(page.getByRole('button', { name: 'Complete test security check', exact: true })).toBeVisible();
 });
