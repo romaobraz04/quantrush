@@ -77,16 +77,16 @@ test('failed recovery requests restore retry controls and do not lose progress',
 test('password recovery verifies identity and rejects mismatched passwords', async () => {
   const { run, context, get } = appHarness();let updated = 0;
   context.auth = { getUser: async () => ({ data: { user: { id: 'owner' } } }), updateUser: async () => { updated++;return {}; } };
-  run("supabase={auth};currentUser={id:'owner'};openRecovery('owner')");get('newPassword').value = 'a-long-new-password';get('confirmPassword').value = 'different-password';
+  run("supabase={auth};currentUser={id:'owner'};recoveryVerifiedUserId='owner';openRecovery('owner')");get('newPassword').value = 'a-long-new-password';get('confirmPassword').value = 'different-password';
   await run('saveRecoveredPassword()');assert.equal(updated, 0);assert.match(get('recoveryMsg').textContent, /match/);
   get('confirmPassword').value = get('newPassword').value;await run('saveRecoveredPassword()');assert.equal(updated, 1);assert.equal(run('authView'), 'account');assert.equal(get('newPassword').value, '');
 });
 test('changing accounts during recovery verification does not change the next account password', async () => {
   const { run, context, get } = appHarness();let resolve, updated = 0;
   context.auth = { getUser: () => new Promise(r => { resolve = r; }), updateUser: async () => { updated++;return {}; } };
-  run("supabase={auth};currentUser={id:'owner'};openRecovery('owner')");get('newPassword').value = get('confirmPassword').value = 'a-long-new-password';
+  run("supabase={auth};currentUser={id:'owner'};recoveryVerifiedUserId='owner';openRecovery('owner')");get('newPassword').value = get('confirmPassword').value = 'a-long-new-password';
   const pending = run('saveRecoveredPassword()');run("applyAuthUser({id:'different'})");resolve({ data: { user: { id: 'owner' } } });await pending;
-  assert.equal(updated, 0);assert.equal(get('savePassword').disabled, false);
+  assert.equal(updated, 0);assert.equal(run('authView'), 'account');assert.equal(get('savePassword').disabled, false);
 });
 test('failed overlapping syncs do not retry forever and keep locally saved progress', async () => {
   const { run, context, storage } = appHarness();let attempts = 0, resolve;

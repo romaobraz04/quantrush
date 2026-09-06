@@ -42,7 +42,7 @@ async function mockAccount(page, options = {}) {
     };
     window.qrMockClient = { from: query, auth: {
       onAuthStateChange(fn) { listener = fn; },
-      getSession: async () => ({ data: { session: session() } }),
+      getSession: async () => { const active = session(); if (active && new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery') listener?.('PASSWORD_RECOVERY', active); return { data: { session: active } }; },
       getUser: async () => ({ data: { user: state.user } }),
       async signInWithPassword(value) { state.calls.push({ type: 'signin', ...value }); const id = value.email.split('@')[0]; state.user = { id, email: value.email, user_metadata: { username: id }, app_metadata: {} }; listener('SIGNED_IN', session()); return { data: { session: session() } }; },
       async signUp(value) { state.calls.push({ type: 'signup', ...value }); return { data: { session: null } }; },
@@ -125,6 +125,13 @@ test('expired callbacks offer a fresh link and remove URL secrets', async ({ pag
   await mockAccount(page); await page.goto('/?auth=recovery#error=access_denied&error_code=otp_expired&error_description=untrusted');
   await expect(page.locator('#authLinkMsg')).toContainText('expired'); await expect(page.locator('#emailHelp')).toBeVisible();
   expect(page.url()).toBe('http://127.0.0.1:4174/'); await expect(page.locator('#newPassword')).toBeHidden();
+});
+
+test('a recovery query alone cannot unlock password changes', async ({ page }) => {
+  await mockAccount(page, { user: player('owner') }); await page.goto('/?auth=recovery');
+  await expect(page.locator('#authLinkMsg')).toContainText('invalid');
+  await expect(page.locator('#emailHelp')).toBeVisible(); await expect(page.locator('#passwordRecovery')).toBeHidden();
+  expect(page.url()).toBe('http://127.0.0.1:4174/');
 });
 
 test('verified recovery opens a new-password screen and clears passwords after saving', async ({ page }, info) => {
