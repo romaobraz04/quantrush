@@ -354,6 +354,7 @@ function applyAuthUser(user){
   cloudStatus=user?'Loading saved progress…':'Guest data is stored in this browser.';
   // Clear private result views as well as the profile when the account changes.
   quitSession(true);resetPracticeView();renderAll();
+  if(currentPage==='account')prepareCaptcha();
   if(user){const epoch=authEpoch;setTimeout(async()=>{try{await loadProfile();if(epoch===authEpoch)await syncAll()}catch(error){if(epoch===authEpoch){cloudStatus='Account connected; sync needs a retry. '+error.message;renderAll()}}},0)}
 }
 async function initAuth(){
