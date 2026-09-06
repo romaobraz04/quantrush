@@ -7,7 +7,7 @@ export const siteConfig = Object.freeze({
   feedbackResultsUrl: 'https://docs.google.com/forms/d/1smNv8CzJ7hF2yAVvj2Cqk-YNYGqUGi4trJJtB9SFmRE/edit#responses',
   feedbackSheetUrl: 'https://docs.google.com/spreadsheets/d/16QrN794-54ODKzV2Eh8LSTw0ad3hVK5AS5NFe5zZ0hE/edit',
   turnstileSiteKey: '0x4AAAAAAEqXD3iLJV4m16J2',
-  emailDeliveryVerified: false,
+  emailDeliveryVerified: true,
   realAccountChecksPassed: false,
   deviceChecksPassed: false,
   feedbackPrivacyVerified: true,
