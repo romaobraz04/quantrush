@@ -155,7 +155,7 @@ const $=id=>document.getElementById(id), qsa=s=>[...document.querySelectorAll(s)
 const LEGACY_STORE='quanttempo_sessions_v4', GUEST_STORE='quanttempo_guest_sessions_v5', THEME='quanttempo_theme_v4', SIM_HIDE_SCORE='quanttempo_sim_hide_score_v1', userStore=id=>`quanttempo_user_sessions_v5_${id}`;
 let authEpoch=0,authReady=false,syncTask=null,localSaveWarning='';
 let currentUser=null,currentProfile=null,sessions=loadGuestSessions(),authMode='signin',cloudStatus='Guest data is stored in this browser.',adminStats=null;
-let currentPage='home',authView='account',helpMode='reset',authBusy=false,authViewEpoch=0,recoveryUserId=null;
+let currentPage='home',authView='account',helpMode='reset',authBusy=false,authViewEpoch=0,recoveryUserId=null,recoveryVerifiedUserId=null;
 const emailCooldowns=new Map();
 const loginCaptcha=createCaptcha(siteConfig.turnstileSiteKey,$('authCaptcha'));
 const emailCaptcha=createCaptcha(siteConfig.turnstileSiteKey,$('helpCaptcha'));
@@ -350,7 +350,7 @@ function applyAuthUser(user){
   if(state.running)quitSession(state.sim);
   sessions=user?readSessions(userStore(user.id)):loadGuestSessions();
   $('password').value='';$('newPassword').value='';$('confirmPassword').value='';$('profileMsg').textContent='';$('accountMsg').textContent='';$('transferMsg').textContent='';
-  if(!user){recoveryUserId=null;authView='account'}
+  if(!user||user.id!==recoveryVerifiedUserId){recoveryUserId=null;recoveryVerifiedUserId=null;authView='account'}
   cloudStatus=user?'Loading saved progress…':'Guest data is stored in this browser.';
   // Clear private result views as well as the profile when the account changes.
   quitSession(true);resetPracticeView();renderAll();
@@ -358,12 +358,12 @@ function applyAuthUser(user){
 }
 async function initAuth(){
   if(!supabase){cloudStatus='Account login could not load. Guest mode still works.';$('authMsg').textContent=cloudStatus;renderAll();return}
-  supabase.auth.onAuthStateChange((event,session)=>{applyAuthUser(session?.user||null);if(event==='PASSWORD_RECOVERY'&&session?.user&&!incomingAuth.error)openRecovery(session.user.id)});
+  supabase.auth.onAuthStateChange((event,session)=>{applyAuthUser(session?.user||null);if(event==='PASSWORD_RECOVERY'&&session?.user&&!incomingAuth.error){recoveryVerifiedUserId=session.user.id;openRecovery(session.user.id)}});
   const epoch=authEpoch;
   try{
     const{data,error}=await supabase.auth.getSession();if(error)throw error;if(epoch===authEpoch)applyAuthUser(data.session?.user||null);
     if(incomingAuth.error){showLinkError(incomingAuth.error)}
-    else if(incomingAuth.recovery){if(currentUser)openRecovery(currentUser.id);else showLinkError('This reset link is invalid or has expired. Request a new link.')}
+    else if(incomingAuth.recovery&&authView!=='recovery')showLinkError('This reset link is invalid or has expired. Request a new link.')
     else if(incomingAuth.callback&&currentUser){setPage('account');$('accountMsg').textContent='Email confirmed. You are signed in.'}
   }catch(error){if(incomingAuth.callback||incomingAuth.recovery)showLinkError('This email link could not be verified. Request a new link.');else $('authMsg').textContent=authErrorMessage(error)}
   finally{clearAuthLocation()}
@@ -398,8 +398,8 @@ async function authAction(event){
 function setAuthBusy(value){authBusy=value;for(const id of['authButton','emailHelpSubmit','savePassword','emailHelpBack','cancelRecovery','forgotPassword','resendConfirmation'])$(id).disabled=value;qsa('[data-auth]').forEach(b=>b.disabled=value)}
 function setAuthMode(mode){if(authBusy)return;authMode=mode;authView='account';authViewEpoch++;qsa('[data-auth]').forEach(x=>x.classList.toggle('active',x.dataset.auth===mode));$('signupUsernameField').classList.toggle('hidden',mode!=='signup');$('authButton').textContent=mode==='signup'?'Create account':'Sign in';$('password').autocomplete=mode==='signup'?'new-password':'current-password';if(mode==='signup')$('password').setAttribute('minlength','8');else $('password').removeAttribute('minlength');$('password').placeholder=mode==='signup'?'At least 8 characters':'Your password';$('password').value='';$('authMsg').textContent='';renderAuth();prepareCaptcha()}
 function openEmailHelp(mode){if(authBusy)return;helpMode=mode;authView='help';authViewEpoch++;$('helpEmail').value=currentUser?.email||$('email').value.trim();$('emailHelpTitle').textContent=mode==='reset'?'Reset password':'Resend confirmation';$('emailHelpSubmit').textContent=mode==='reset'?'Send reset link':'Send confirmation link';$('emailHelpMsg').textContent='';setPage('account');$('helpEmail').focus()}
-function closeAccountHelp(){if(authBusy)return;authView='account';authViewEpoch++;recoveryUserId=null;$('newPassword').value=$('confirmPassword').value='';$('authLinkMsg').classList.add('hidden');clearAuthLocation();renderAuth();prepareCaptcha()}
-function openRecovery(userId){authView='recovery';authViewEpoch++;recoveryUserId=userId;$('newPassword').value=$('confirmPassword').value='';$('recoveryMsg').textContent='';setPage('account');$('newPassword').focus()}
+function closeAccountHelp(){if(authBusy)return;authView='account';authViewEpoch++;recoveryUserId=null;recoveryVerifiedUserId=null;$('newPassword').value=$('confirmPassword').value='';$('authLinkMsg').classList.add('hidden');clearAuthLocation();renderAuth();prepareCaptcha()}
+function openRecovery(userId){if(!userId||recoveryVerifiedUserId!==userId){showLinkError('This reset link is invalid or has expired. Request a new link.');return}authView='recovery';authViewEpoch++;recoveryUserId=userId;$('newPassword').value=$('confirmPassword').value='';$('recoveryMsg').textContent='';setPage('account');$('newPassword').focus()}
 function showLinkError(message){authView='help';helpMode=incomingAuth.recovery?'reset':'resend';$('emailHelpTitle').textContent=helpMode==='reset'?'Reset password':'Resend confirmation';$('emailHelpSubmit').textContent=helpMode==='reset'?'Send reset link':'Send confirmation link';$('authLinkMsg').textContent=message;$('authLinkMsg').classList.remove('hidden');setPage('account')}
 function clearAuthLocation(){if(typeof history==='undefined'||!history.replaceState)return;const url=new URL(location.href);for(const key of['auth','code','error','error_code','error_description'])url.searchParams.delete(key);const hash=new URLSearchParams(url.hash.slice(1));if(['access_token','refresh_token','error','error_code','type'].some(key=>hash.has(key)))url.hash='';history.replaceState(null,'',url.pathname+url.search+url.hash)}
 function prepareCaptcha(){loginCaptcha.remove();emailCaptcha.remove();if(currentPage!=='account'||!siteConfig.turnstileSiteKey||authView==='recovery')return;const help=authView==='help';if(!help&&currentUser)return;const target=help?emailCaptcha:loginCaptcha,retry=$(help?'retryHelpCaptcha':'retryAuthCaptcha');retry.classList.remove('hidden');target.mount().catch(error=>{$(help?'emailHelpMsg':'authMsg').textContent=error.message})}
@@ -416,9 +416,9 @@ async function sendAccountEmail(event){
 async function saveRecoveredPassword(event){
   event?.preventDefault();if(authBusy||!$('passwordRecovery').reportValidity())return;
   const password=$('newPassword').value;if(password.length<8){$('recoveryMsg').textContent='Use at least 8 characters.';return}if(password!==$('confirmPassword').value){$('recoveryMsg').textContent='The passwords do not match.';return}
-  if(!supabase||!currentUser||currentUser.id!==recoveryUserId){showLinkError('Your reset session has expired. Request a new link.');return}
+  if(!supabase||!currentUser||currentUser.id!==recoveryUserId||currentUser.id!==recoveryVerifiedUserId){showLinkError('Your reset session has expired. Request a new link.');return}
   const id=currentUser.id,epoch=authEpoch;setAuthBusy(true);$('savePassword').textContent='Saving...';$('recoveryMsg').textContent='';
-  try{const verified=await supabase.auth.getUser();if(verified.error||verified.data.user?.id!==id)throw new Error('Your reset session has expired. Request a new link.');if(epoch!==authEpoch)return;const {error}=await supabase.auth.updateUser({password});if(error)throw error;if(epoch!==authEpoch)return;authView='account';recoveryUserId=null;$('newPassword').value=$('confirmPassword').value='';clearAuthLocation();renderAuth();$('accountMsg').textContent='Password updated.'}
+  try{const verified=await supabase.auth.getUser();if(verified.error||verified.data.user?.id!==id)throw new Error('Your reset session has expired. Request a new link.');if(epoch!==authEpoch)return;const {error}=await supabase.auth.updateUser({password});if(error)throw error;if(epoch!==authEpoch)return;authView='account';recoveryUserId=null;recoveryVerifiedUserId=null;$('newPassword').value=$('confirmPassword').value='';clearAuthLocation();renderAuth();$('accountMsg').textContent='Password updated.'}
   catch(error){if(epoch===authEpoch)$('recoveryMsg').textContent=authErrorMessage(error)}finally{setAuthBusy(false);$('savePassword').textContent='Save new password'}
 }
 function exportProgress(){
